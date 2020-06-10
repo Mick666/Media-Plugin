@@ -1,0 +1,50 @@
+{
+    "manifest_version": 2,
+    "name": "MP Improvements",
+    "version": "0.1",
+    "content_scripts": [
+        {
+            "matches": ["https://app.mediaportal.com/*"],
+            "js": ["content.js"]
+        }
+    ],
+    "permissions": [
+        "clipboardWrite", "clipboardRead"
+    ],
+    "icons": {
+        "16": "images/icon-16.png",
+        "48": "images/icon-48.png",
+        "128": "images/icon-128.png"
+    },
+    "background": {
+        "persistent": false,
+        "page": "background.html"
+    },
+    "commands": {
+        "paste" : {
+            "suggested_key": {
+                "default": "Ctrl+Shift+Z"
+            },
+            "description": "Paste feature"
+        },
+        "toggle-feature-foo": {
+            "suggested_key": {
+              "default": "Alt+Shift+Q",
+              "mac": "Command+Shift+Y"
+            },
+            "description": "Toggle feature foo"
+          },
+        "agd_syndication" : {
+            "suggested_key": {
+                "default": "Alt+Shift+W"
+            },
+            "description": "AGD Feature"
+        },
+        "abc_pastecleaning": {
+            "suggested_key": {
+              "default": "Ctrl+Shift+Q"
+            },
+            "description": "ABC Feature"
+          }
+    }
+}
