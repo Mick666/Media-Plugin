@@ -4,7 +4,7 @@
     "version": "0.1",
     "content_scripts": [
         {
-            "matches": ["https://app.mediaportal.com/*"],
+            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*"],
             "js": ["content.js"]
         }
     ],
