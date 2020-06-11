@@ -2,9 +2,10 @@
 //  To get the highlighted text though, we need to send a message to the content.js file, and get the text in the response.
 //  Some of these are to save typing, so we don't need to send the message to the content.js file.
 chrome.commands.onCommand.addListener(function (command) {
+    console.log(command)
     if (command === "paste") {
         getHighlightedText(command)
-    } else if (command === "toggle-feature-foo") {
+    } else if (command === "similar_coverage") {
         copy("", command)
     } else if (command === "agd_syndication") {
         copy("", command)
@@ -18,7 +19,7 @@ function copy(str, setting) {
     var sandbox = document.getElementById('sandbox');
     if (setting === "paste") {
         sandbox.value = str.replace(/\n/g, " ").replace(/^ /, "").replace(/  /g, " ");
-    } else if (setting === "toggle-feature-foo") {
+    } else if (setting === "similar_coverage") {
         sandbox.value = "Similar coverage reported by: "
     } else if (setting === "agd_syndication") {
         sandbox.value = "Also in other publications"

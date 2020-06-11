@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.1",
+    "version": "0.2",
     "content_scripts": [
         {
             "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*"],
@@ -27,7 +27,7 @@
             },
             "description": "Paste feature"
         },
-        "toggle-feature-foo": {
+        "similar_coverage": {
             "suggested_key": {
               "default": "Alt+Shift+Q",
               "mac": "Command+Shift+Y"
