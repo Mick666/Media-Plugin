@@ -1,29 +1,30 @@
 //  To set the clipboard's text, we need to use a background html page with a dummy field we can set the value of.
 //  To get the highlighted text though, we need to send a message to the content.js file, and get the text in the response.
 //  Some of these are to save typing, so we don't need to send the message to the content.js file.
+const commandObj = {"static-text-1":0, "static-text-2":1, "static-text-3":2, "static-text-4":3, "static-text-5":4}
 chrome.commands.onCommand.addListener(function (command) {
     console.log(command)
-    if (command === "paste") {
+    if (command === "1_paste") {
         getHighlightedText(command)
-    } else if (command === "similar_coverage") {
-        copy("", command)
-    } else if (command === "agd_syndication") {
-        copy("", command)
-    }  else if (command === "abc_pastecleaning") {
+    } else if (command === "2_abc") {
         getHighlightedText(command)
+    } else if (command === "static-text-1") {
+        copy("", command)
+        copy("", command)
+    } else if (command === "static-text-2") { 
+        copy("", command)
     }
 });
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
 
 function copy(str, setting) {
     var sandbox = document.getElementById('sandbox');
-    if (setting === "paste") {
+    if (setting === "1_paste") {
         sandbox.value = str.replace(/\n/g, " ").replace(/^ /, "").replace(/  /g, " ");
-    } else if (setting === "similar_coverage") {
-        sandbox.value = "Similar coverage reported by: "
-    } else if (setting === "agd_syndication") {
-        sandbox.value = "Also in other publications"
-    } else if (setting === "abc_pastecleaning") {
+        sandbox.select();
+        document.execCommand('copy');
+        sandbox.value = ('');
+    } else if (setting === "2_abc") {
         sandbox.value = str.split('\n').filter(x => x.length > 0 && 
             (x.endsWith(".") || 
             x.endsWith("\"") || 
@@ -32,10 +33,21 @@ function copy(str, setting) {
             x.endsWith("\'")
             ))
         .join(" ")
-    }
-    sandbox.select();
-    document.execCommand('copy');
-    sandbox.value = ('');
+        sandbox.select();
+        document.execCommand('copy');
+        sandbox.value = ('');
+    } else {
+        chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(result) {
+            sandbox.value = result.staticText[commandObj[setting]]
+            sandbox.select();
+            document.execCommand('copy');
+            sandbox.value = ('');
+          });
+    } 
+    // else if (setting === "static-text-2") {
+    //     sandbox.value = "Also in other publications"
+    // } 
+    getContentFromClipboard();
 }
 
 // This gets the highlighted text from the webpage.
@@ -46,4 +58,17 @@ function getHighlightedText(setting) {
           copy(response.copy, setting)
         });
       });
+}
+
+function getContentFromClipboard() {
+    var result = '';
+    var sandbox = document.getElementById('sandbox');
+    sandbox.value = '';
+    sandbox.select();
+    if (document.execCommand('paste')) {
+        result = sandbox.value;
+        console.log('got value from sandbox: ' + result);
+    }
+    sandbox.value = '';
+    return result;
 }

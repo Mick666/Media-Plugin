@@ -1,7 +1,8 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.2",
+    "version": "0.3",
+    "options_page": "options.html",
     "content_scripts": [
         {
             "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*"],
@@ -9,7 +10,7 @@
         }
     ],
     "permissions": [
-        "clipboardWrite", "clipboardRead"
+        "clipboardWrite", "clipboardRead", "storage"
     ],
     "icons": {
         "16": "images/icon-16.png",
@@ -21,30 +22,39 @@
         "page": "background.html"
     },
     "commands": {
-        "paste" : {
+        "1_paste" : {
             "suggested_key": {
                 "default": "Ctrl+Shift+Z"
             },
-            "description": "Paste feature"
+            "description": "Copy without linebreaks"
         },
-        "similar_coverage": {
+        "2_abc": {
             "suggested_key": {
-              "default": "Alt+Shift+Q",
-              "mac": "Command+Shift+Y"
+                "default": "Ctrl+Shift+Q"
             },
-            "description": "Toggle feature foo"
-          },
-        "agd_syndication" : {
+            "description": "Copy without ABC's Key Points"
+        },
+        "static-text-1": {
+            "suggested_key": {
+                "default": "Alt+Shift+Q",
+                "mac": "Command+Shift+Y"
+            },
+            "description": "Static text #1"
+        },
+        "static-text-2" : {
             "suggested_key": {
                 "default": "Alt+Shift+W"
             },
-            "description": "AGD Feature"
+            "description": "Static text #2"
         },
-        "abc_pastecleaning": {
-            "suggested_key": {
-              "default": "Ctrl+Shift+Q"
-            },
-            "description": "ABC Feature"
-          }
+        "static-text-3": {
+            "description": "Static text #3"
+        },
+        "static-text-4": {
+            "description": "Static text #4"
+        },
+        "static-text-5": {
+            "description": "Static text #5"
+        }
     }
 }
