@@ -11,12 +11,12 @@
 <body>
     <div class="container">
         <h2>Mediaportal Improvement plugin options</h2>
-        <!-- <div>
-            Disable Media Outlet/Media Contact links: <label class="switch">
+        <div>
+            Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch">
                 <input type="checkbox" checked>
                 <span class="slider round"></span>
             </label>
-        </div> -->
+        </div>
         <div id="parentGrid">
             <div class="subGrid">
                 <h4>Command</h6>
@@ -38,9 +38,11 @@
                             
                         </div>
                     </div>
-                    
+                    <div class="reminderText">
                     To edit the hotkeys, visit <a id="hotkey" href="chrome://extensions/shortcuts">the relevant Extensions page in Chrome</a> <br>
-                    <button id="save">Save</button>
+                </div>
+                    <button class="reminderText" id="save">Save</button>
+
     </div>
                 
                 <script src="options.js"></script>

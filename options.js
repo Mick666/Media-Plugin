@@ -2,6 +2,15 @@ document.getElementById('hotkey').onclick = event => {
     chrome.tabs.create({url: 'chrome://extensions/configureCommands'});
     event.preventDefault();
 };
+document.getElementById('switch').addEventListener("change", function(e) {
+    if (e.target.checked) {
+        chrome.storage.local.set({disableLinks: true}, function() {
+        })
+    } else {
+        chrome.storage.local.set({disableLinks: false}, function() {
+        })
+    }
+});
 const itemGrid = document.getElementsByClassName("itemGrid")
 
 // chrome.storage.local.get(['staticText'], function(result) {
@@ -63,5 +72,3 @@ function saveOptions() {
         console.log(options);
       });
 }
-
-//Write a function for adding the nodes
