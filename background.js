@@ -1,19 +1,16 @@
 //  To set the clipboard's text, we need to use a background html page with a dummy field we can set the value of.
 //  To get the highlighted text though, we need to send a message to the content.js file, and get the text in the response.
 //  Some of these are to save typing, so we don't need to send the message to the content.js file.
-const commandObj = {"static-text-1":0, "static-text-2":1, "static-text-3":2, "static-text-4":3, "static-text-5":4}
+const commandObj = {"static-text-1":0, "static-text-2":1, "static-text-3":2, "static-text-4":3, "static-text-5":4, "static-text-6":5, "static-text-7":6, "static-text-8":7, "static-text-9":8, "t_static-text-10":9}
 chrome.commands.onCommand.addListener(function (command) {
     console.log(command)
     if (command === "1_paste") {
         getHighlightedText(command)
     } else if (command === "2_abc") {
         getHighlightedText(command)
-    } else if (command === "static-text-1") {
+    } else {
         copy("", command)
-        copy("", command)
-    } else if (command === "static-text-2") { 
-        copy("", command)
-    }
+    } 
 });
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
 
@@ -38,6 +35,8 @@ function copy(str, setting) {
         sandbox.value = ('');
     } else {
         chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(result) {
+            console.log(result)
+            console.log(setting);
             sandbox.value = result.staticText[commandObj[setting]]
             sandbox.select();
             document.execCommand('copy');
@@ -47,7 +46,6 @@ function copy(str, setting) {
     // else if (setting === "static-text-2") {
     //     sandbox.value = "Also in other publications"
     // } 
-    getContentFromClipboard();
 }
 
 // This gets the highlighted text from the webpage.

@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.4",
+    "version": "0.4.2",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -24,7 +24,7 @@
     "commands": {
         "1_paste" : {
             "suggested_key": {
-                "default": "Ctrl+Shift+Z"
+                "default": "Ctrl+Shift+A"
             },
             "description": "Copy without linebreaks"
         },
@@ -55,6 +55,21 @@
         },
         "static-text-5": {
             "description": "Static text #5"
+        },
+        "static-text-6": {
+            "description": "Static text #6"
+        },
+        "static-text-7": {
+            "description": "Static text #7"
+        },
+        "static-text-8": {
+            "description": "Static text #8"
+        },
+        "static-text-9": {
+            "description": "Static text #9"
+        },
+        "t_static-text-10": {
+            "description": "Static text #10"
         }
     }
 }

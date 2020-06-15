@@ -42,6 +42,7 @@ chrome.commands.getAll(function(commands) {
         } else {
             let shortcut = document.createElement("p")
             shortcut.innerHTML = command.shortcut;
+            if (shortcut.innerHTML === "") shortcut.innerHTML = "Not bound"
             let desc = document.createElement("p")
             desc.innerHTML = command.description
             itemGrid[1].appendChild(shortcut)
@@ -51,7 +52,7 @@ chrome.commands.getAll(function(commands) {
 })
 
 chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(data){
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
         let setting = document.createElement("textarea");
         setting.value = data.staticText[i] || ""
         setting.className = "staticText"

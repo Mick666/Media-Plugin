@@ -7,7 +7,7 @@
 //     }
 //   );
 chrome.storage.local.get({disableLinks: true}, function(data){
-    if (data.disableLinks)  document.body.addEventListener("mouseover", func)
+    if (data.disableLinks && window.location.toString() !== "https://app.mediaportal.com/dailybriefings/#/briefings")  document.body.addEventListener("mouseover", func)
 })
 // arr1.filter(x => x.className === "" && x.style.paddingLeft)
 
