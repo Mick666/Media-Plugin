@@ -11,34 +11,43 @@ document.getElementById('switch').addEventListener("change", function(e) {
         })
     }
 });
+
+document.getElementById('decap').addEventListener("change", function(e) {
+    if (e.target.checked) {
+        chrome.storage.local.set({decap: true}, function() {
+        })
+    } else {
+        chrome.storage.local.set({decap: false}, function() {
+        })
+    }
+});
 const itemGrid = document.getElementsByClassName("itemGrid")
 
 // chrome.storage.local.get(['staticText'], function(result) {
 //     console.log(result.staticText)
 // })
-
+function createOption(hotkey, description, name) {
+    let shortcut = document.createElement("p")
+    shortcut.innerHTML = hotkey;
+    let desc = document.createElement("p");
+    desc.innerHTML = description
+    let comm = document.createElement("p")
+    comm.innerHTML = name
+    itemGrid[0].appendChild(comm)
+    itemGrid[1].appendChild(shortcut)
+    itemGrid[2].appendChild(desc)
+}
 chrome.commands.getAll(function(commands) {
+    console.log(commands)
     commands.map((command)=> {
         if (command.name === "1_paste") {
-            let shortcut = document.createElement("p")
-            shortcut.innerHTML = command.shortcut;
-            let desc = document.createElement("p");
-            desc.innerHTML = "Removes linebreaks from copied text"
-            let comm = document.createElement("p")
-            comm.innerHTML = "Linebreak copy"
-            itemGrid[0].appendChild(comm)
-            itemGrid[1].appendChild(shortcut)
-            itemGrid[2].appendChild(desc)
+            createOption(command.shortcut, "Removes linebreaks from copied text", "Linebreak copy")
         } else if (command.name === "2_abc") {
-            let shortcut = document.createElement("p")
-            shortcut.innerHTML = command.shortcut;
-            let desc = document.createElement("p");
-            desc.innerHTML = "Ignores ABC's Key Points when copying text"
-            let comm = document.createElement("p")
-            comm.innerHTML = "ABC copy"
-            itemGrid[0].appendChild(comm)
-            itemGrid[1].appendChild(shortcut)
-            itemGrid[2].appendChild(desc)
+            createOption(command.shortcut, "Ignores ABC's Key Points when copying text", "ABC copy")
+        } else if (command.name ==="highlightBroadcast") {
+            createOption(command.shortcut, "Highlights broadcast items which need a word recapitalised", "Broadcast higlighter")
+        }
+        else if (command.name === "_execute_browser_action") {
         } else {
             let shortcut = document.createElement("p")
             shortcut.innerHTML = command.shortcut;
@@ -50,6 +59,9 @@ chrome.commands.getAll(function(commands) {
         }
     })
 })
+// ["Similar coverage reported by: ", "Also in other publications"]
+// ["Similar coverage reported by: ", "Also in other publications", "Click here to access PDF version of print articles", "Click here to access text version of print articles", "Click here to access combined PDF report of today's front pages", "Click here to access all print articles", "Click here to view all print articles", "Michael.Martino@isentia.com", 
+// "The Minister for Trade, Tourism and Investment is also mentioned in \"X\" in the Minister for Foreign Affairs section", "The Department of Foreign Affairs and Trade is is also mentioned in \"X\" in the Minister for Foreign Affairs section"]
 
 chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(data){
     for (let i = 0; i < 10; i++) {

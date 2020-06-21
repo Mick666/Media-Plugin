@@ -5,31 +5,67 @@ const commandObj = {"static-text-1":0, "static-text-2":1, "static-text-3":2, "st
 chrome.commands.onCommand.addListener(function (command) {
     console.log(command)
     if (command === "1_paste") {
-        getHighlightedText(command)
+        chrome.storage.local.get({decap: true}, function(result) {
+            getHighlightedText(command, result.decap)
+          });
     } else if (command === "2_abc") {
-        getHighlightedText(command)
+        chrome.storage.local.get({decap: true}, function(result) {
+            getHighlightedText(command, result.decap)
+          });
+    } else if (command === "highlightBroadcast") {
+        highlightBroadcast()
     } else {
         copy("", command)
     } 
 });
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
+const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP"]
+const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", "Daniel", "Andrews", "Victoria", "Queensland", "Tasmania", 
+"Annastacia", "Palaszczuk", "Gladys", "Berejiklian", "Mark", "McGowan", "Steven", "Marshall", "Peter", "Gutwein", "Andrew", "Barr", 
+"Michael", "Gunner", "Dutton", "Alan", "Tudge", "Kevin", "Rudd", "Anthony", "Albanese", "Tanya", "Plibersek", "Brendan", "O'Connor", 
+"Michaelia", "Cash", "Parliament", "House", "Prime", "Minister", "Greg", "Hunt", "Marise", "Payne", "Ken", "Wyatt", "McCormack", "ScoMo", 
+"Paul", "Fletcher", "Coulton", "Gee", "Buchholz", "Hogan", "Nola", "Marino", "Josh", "Frydenberg", "Sukkar", "Hastie", "Dave", "Sharma", "Jane", "Hume", 
+"Mathias", "Cormann", "David", "Littleproud", "Sussan", "Ley", "Keith", "Pitt", "Trevor", "Evans", "Jonathon", "Duniam", "Simon", "Birmingham", "Alex", 
+"Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker"]
+// MPs
 
-function copy(str, setting) {
+function copy(str, setting, decap) {
     var sandbox = document.getElementById('sandbox');
     if (setting === "1_paste") {
-        sandbox.value = str.replace(/\n/g, " ").replace(/^ /, "").replace(/  /g, " ");
+        let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, "")
+        .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, "")
+        .replace(/\n/g, " ")
+        .replace(/^ /, "")
+        .replace(/  /g, " ")
+        .split(" ");
+        if (decap) {
+            for (let i = 0; i < 3 && i < words.length; i++) {
+                words[i] = decapWord(words[i], i)
+            }
+        }
+        sandbox.value = words.join(" ");
         sandbox.select();
         document.execCommand('copy');
         sandbox.value = ('');
     } else if (setting === "2_abc") {
-        sandbox.value = str.split('\n').filter(x => x.length > 0 && 
+        let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, "")
+        .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, "")
+        .replace(/ Key points.*\n/, "\n")
+        .words.split('\n')
+        .filter(x => x.length > 0 && 
             (x.endsWith(".") || 
             x.endsWith("\"") || 
             x.endsWith("!") || 
             x.endsWith("?") ||
             x.endsWith("\'")
             ))
-        .join(" ")
+        .join(" ").split(" ")
+        if (decap) {
+            for (let i = 0; i < 3 && i < words.length; i++) {
+                words[i] = decapWord(words[i], i)
+            }
+        }
+        sandbox.value = words.join(" ");
         sandbox.select();
         document.execCommand('copy');
         sandbox.value = ('');
@@ -49,12 +85,18 @@ function copy(str, setting) {
 }
 
 // This gets the highlighted text from the webpage.
-function getHighlightedText(setting) {
+function getHighlightedText(setting, decap) {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {greeting: "hello"}, function(response) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: "getHighlightedText"}, function(response) {
           console.log(response);
-          copy(response.copy, setting)
+          copy(response.copy, setting, decap)
         });
+      });
+}
+
+function highlightBroadcast() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: "highlight"});
       });
 }
 
@@ -70,3 +112,36 @@ function getContentFromClipboard() {
     sandbox.value = '';
     return result;
 }
+
+function decapWord(word, i) {
+    const splitWord = word.split("'")
+    if (isCapitalised(word) && skipDecapping.indexOf(word) === -1) {
+        if (properNouns.indexOf(toSentenceCase(word)) > -1 || i === 0) {
+            return toSentenceCase(word);
+        } else if (splitWord.length > 1) {
+            if (skipDecapping.indexOf(splitWord[0]) > -1) return `${splitWord[0].toUpperCase()}\'s`
+            else if (properNouns.indexOf(toSentenceCase(splitWord[0])) > -1) return `${toSentenceCase(splitWord[0])}\'s`
+            return word;
+        } else if (word.toUpperCase() === "MPS") return "MPs"
+
+        return word.toLowerCase();
+    } else if (skipDecapping.indexOf(word) > -1) {
+        return word.toUpperCase() 
+    } 
+    return word;
+}
+
+const isCapitalised = (word) => word.toUpperCase() === word;
+const toSentenceCase = (word) => word.split("").map((letter, index) => {
+    if (index === 0) {
+        return letter;
+    } else return letter.toLowerCase();
+}).join("")
+
+
+// ,
+//     "browser_action": {
+//         "default_icon": "images/icon-48.png",
+//         "default_popup": "popup.html",
+//         "default_title": "MP Improvements"
+//       },

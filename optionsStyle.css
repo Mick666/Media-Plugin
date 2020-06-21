@@ -94,3 +94,6 @@ input:checked + .slider:before {
 .staticText {
     margin: 2px;
 }
+.switchContainer {
+    margin-bottom: 10px;
+}

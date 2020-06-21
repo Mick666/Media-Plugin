@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.4.2",
+    "version": "0.4.6",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -42,9 +42,6 @@
             "description": "Static text #1"
         },
         "static-text-2" : {
-            "suggested_key": {
-                "default": "Alt+Shift+W"
-            },
             "description": "Static text #2"
         },
         "static-text-3": {
@@ -70,6 +67,12 @@
         },
         "t_static-text-10": {
             "description": "Static text #10"
+        },
+        "highlightBroadcast": {
+            "suggested_key": {
+                "default": "Alt+Q"
+            },
+            "description": "Highlight broadcast items which need recapping"
         }
     }
 }
