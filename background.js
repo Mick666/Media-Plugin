@@ -19,14 +19,15 @@ chrome.commands.onCommand.addListener(function (command) {
     } 
 });
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
-const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP"]
+const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", "CSIRO", "UK", "TPG"]
 const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", "Daniel", "Andrews", "Victoria", "Queensland", "Tasmania", 
 "Annastacia", "Palaszczuk", "Gladys", "Berejiklian", "Mark", "McGowan", "Steven", "Marshall", "Peter", "Gutwein", "Andrew", "Barr", 
 "Michael", "Gunner", "Dutton", "Alan", "Tudge", "Kevin", "Rudd", "Anthony", "Albanese", "Tanya", "Plibersek", "Brendan", "O'Connor", 
 "Michaelia", "Cash", "Parliament", "House", "Prime", "Minister", "Greg", "Hunt", "Marise", "Payne", "Ken", "Wyatt", "McCormack", "ScoMo", 
 "Paul", "Fletcher", "Coulton", "Gee", "Buchholz", "Hogan", "Nola", "Marino", "Josh", "Frydenberg", "Sukkar", "Hastie", "Dave", "Sharma", "Jane", "Hume", 
 "Mathias", "Cormann", "David", "Littleproud", "Sussan", "Ley", "Keith", "Pitt", "Trevor", "Evans", "Jonathon", "Duniam", "Simon", "Birmingham", "Alex", 
-"Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker"]
+"Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker",
+"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra"]
 // MPs
 
 function copy(str, setting, decap) {
@@ -40,7 +41,8 @@ function copy(str, setting, decap) {
         .split(" ");
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
-                words[i] = decapWord(words[i], i)
+                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1])
+                else words[i] = decapWord(words[i], i)
             }
         }
         sandbox.value = words.join(" ");
@@ -51,7 +53,7 @@ function copy(str, setting, decap) {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, "")
         .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, "")
         .replace(/ Key points.*\n/, "\n")
-        .words.split('\n')
+        .split('\n')
         .filter(x => x.length > 0 && 
             (x.endsWith(".") || 
             x.endsWith("\"") || 
@@ -113,7 +115,7 @@ function getContentFromClipboard() {
     return result;
 }
 
-function decapWord(word, i) {
+function decapWord(word, i, nextWord) {
     const splitWord = word.split("'")
     if (isCapitalised(word) && skipDecapping.indexOf(word) === -1) {
         if (properNouns.indexOf(toSentenceCase(word)) > -1 || i === 0) {
@@ -122,7 +124,8 @@ function decapWord(word, i) {
             if (skipDecapping.indexOf(splitWord[0]) > -1) return `${splitWord[0].toUpperCase()}\'s`
             else if (properNouns.indexOf(toSentenceCase(splitWord[0])) > -1) return `${toSentenceCase(splitWord[0])}\'s`
             return word;
-        } else if (word.toUpperCase() === "MPS") return "MPs"
+        } else if (word.toUpperCase() === "MPS") return "MPs" 
+        else if (word.toLowerCase() === "federal" && (nextWord === "Government" || nextWord === "GOVERNMENT")) return "Federal"
 
         return word.toLowerCase();
     } else if (skipDecapping.indexOf(word) > -1) {
