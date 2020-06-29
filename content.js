@@ -82,21 +82,30 @@ function checkingHighlights() {
 
     for (let i = 1; i < items.length; i++) {
         items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML =
-        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, "").replace("\n", "").replace(/^(\w+\s){1,10}/g, function(match) {
+        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, "").replace("\n", "")
+        .replace(/.*?[\.!\?](?:\s|$)/, function(match) {
+            return match.replace("writes", function(submatch) {
+                return ' <span style="background-color:#8A2BE2;">' + submatch + "</span>"
+            })
+        })
+        .replace(/^(\w+\s){1,10}/g, function(match) {
             return match
             .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function(submatch) {
                 if (skipDecapping.indexOf(submatch) > -1) return submatch;
                 return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
             })
             .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch) {
-                console.log(submatch, toSentenceCase(submatch))
                 if (skipDecapping.indexOf(submatch.toUpperCase()) > -1) return ' <span style="background-color:#00FF00;">' + submatch + "</span> "
                 else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase()) && properNouns.indexOf(toSentenceCase(submatch)) > -1 ) return ' <span style="background-color:#00FF00;">' + submatch + "</span> "
                 return submatch;
             })
             .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function(submatch) {
                 if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1) return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
-                else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
+                else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return ' <span style="background-color:#8A2BE2;">' + submatch + "</span> "
+                return submatch;
+            })
+            .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function(submatch) {
+                if (submatch.length > 0) return '<span style="background-color:#FF0000;">' + submatch + "</span>"
                 return submatch;
             })
         })
