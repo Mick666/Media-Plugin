@@ -1,15 +1,18 @@
+const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", "CSIRO", "UK", "TPG", "CEO"]
+const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", "Daniel", "Andrews", "Victoria", "Queensland", "Tasmania", 
+"Annastacia", "Palaszczuk", "Gladys", "Berejiklian", "Mark", "McGowan", "Steven", "Marshall", "Peter", "Gutwein", "Andrew", "Barr", 
+"Michael", "Gunner", "Dutton", "Alan", "Tudge", "Kevin", "Rudd", "Anthony", "Albanese", "Tanya", "Plibersek", "Brendan", "O'Connor", 
+"Michaelia", "Cash", "Parliament", "House", "Prime", "Minister", "Greg", "Hunt", "Marise", "Payne", "Ken", "Wyatt", "McCormack", "ScoMo", 
+"Paul", "Fletcher", "Coulton", "Gee", "Buchholz", "Hogan", "Nola", "Marino", "Josh", "Frydenberg", "Sukkar", "Hastie", "Dave", "Sharma", "Jane", "Hume", 
+"Mathias", "Cormann", "David", "Littleproud", "Sussan", "Ley", "Keith", "Pitt", "Trevor", "Evans", "Jonathon", "Duniam", "Simon", "Birmingham", "Alex", 
+"Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker",
+"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra"]
+const possibleSubheadings = ["exclusive", "inside"]
 
-// chrome.runtime.onMessage.addListener(
-//     function(request, sender, sendResponse) {
-//       if( request.message === "page_was_changed" ) {
-//         console.log(window.location.toString())
-//       }
-//     }
-//   );
+
 chrome.storage.local.get({disableLinks: true}, function(data){
     if (data.disableLinks && window.location.toString() !== "https://app.mediaportal.com/dailybriefings/#/briefings")  document.body.addEventListener("mouseover", func)
 })
-// arr1.filter(x => x.className === "" && x.style.paddingLeft)
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
@@ -51,6 +54,8 @@ chrome.runtime.onMessage.addListener(
             sendResponse({copy: window.getSelection().toString()});
         } else if (request.action === "highlight") {
             highlightBroadcastItems()
+        } else if (request.action === "checkingWords") {
+            checkingHighlights()
         }
     });
         
@@ -67,3 +72,39 @@ function highlightBroadcastItems() {
             }
     }
 }
+
+function checkingHighlights() {
+    let items = [...document.getElementsByClassName("mj-column-per-100 outlook-group-fix")]
+    .filter(item => item.children[0].tagName === "TABLE" 
+    && item.children[0].children[0].tagName === "TBODY" 
+    && (item.children[0].children[0].children.length === 5 || item.children[0].children[0].children.length === 4))
+    console.log(items)
+
+    for (let i = 1; i < items.length; i++) {
+        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML =
+        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, "").replace("\n", "").replace(/^(\w+\s){1,10}/g, function(match) {
+            return match
+            .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function(submatch) {
+                if (skipDecapping.indexOf(submatch) > -1) return submatch;
+                return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
+            })
+            .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch) {
+                console.log(submatch, toSentenceCase(submatch))
+                if (skipDecapping.indexOf(submatch.toUpperCase()) > -1) return ' <span style="background-color:#00FF00;">' + submatch + "</span> "
+                else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase()) && properNouns.indexOf(toSentenceCase(submatch)) > -1 ) return ' <span style="background-color:#00FF00;">' + submatch + "</span> "
+                return submatch;
+            })
+            .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function(submatch) {
+                if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1) return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
+                else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return ' <span style="background-color:#FDFF47;">' + submatch + "</span> "
+                return submatch;
+            })
+        })
+    }
+}
+
+const toSentenceCase = (word) => word.split("").map((letter, index) => {
+    if (index === 0) {
+        return letter.toUpperCase();
+    } else return letter.toLowerCase();
+}).join("")

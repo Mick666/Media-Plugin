@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.4.8",
+    "version": "0.4.9",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -35,10 +35,6 @@
             "description": "Copy without ABC's Key Points"
         },
         "static-text-1": {
-            "suggested_key": {
-                "default": "Alt+Shift+Q",
-                "mac": "Command+Shift+Y"
-            },
             "description": "Static text #1"
         },
         "static-text-2" : {
@@ -73,6 +69,13 @@
                 "default": "Alt+Q"
             },
             "description": "Highlight broadcast items which need recapping"
+        },
+        "highlightPreviewWords": {
+            "suggested_key": {
+                "default": "Alt+W",
+                "mac": "Command+Shift+Y"
+            },
+            "description": "Highlight possible mistakes in checking"
         }
     }
 }

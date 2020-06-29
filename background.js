@@ -14,12 +14,14 @@ chrome.commands.onCommand.addListener(function (command) {
           });
     } else if (command === "highlightBroadcast") {
         highlightBroadcast()
+    } else if (command === "highlightPreviewWords") {
+        checkingWords()
     } else {
         copy("", command)
     } 
 });
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
-const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", "CSIRO", "UK", "TPG"]
+const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", "CSIRO", "UK", "TPG", "CEO"]
 const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", "Daniel", "Andrews", "Victoria", "Queensland", "Tasmania", 
 "Annastacia", "Palaszczuk", "Gladys", "Berejiklian", "Mark", "McGowan", "Steven", "Marshall", "Peter", "Gutwein", "Andrew", "Barr", 
 "Michael", "Gunner", "Dutton", "Alan", "Tudge", "Kevin", "Rudd", "Anthony", "Albanese", "Tanya", "Plibersek", "Brendan", "O'Connor", 
@@ -102,6 +104,12 @@ function highlightBroadcast() {
       });
 }
 
+function checkingWords() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: "checkingWords"});
+      });
+}
+
 function getContentFromClipboard() {
     var result = '';
     var sandbox = document.getElementById('sandbox');
@@ -137,7 +145,7 @@ function decapWord(word, i, nextWord) {
 const isCapitalised = (word) => word.toUpperCase() === word;
 const toSentenceCase = (word) => word.split("").map((letter, index) => {
     if (index === 0) {
-        return letter;
+        return letter.toUpperCase();
     } else return letter.toLowerCase();
 }).join("")
 

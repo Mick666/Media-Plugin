@@ -46,6 +46,8 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, "Ignores ABC's Key Points when copying text", "ABC copy")
         } else if (command.name ==="highlightBroadcast") {
             createOption(command.shortcut, "Highlights broadcast items which need a word recapitalised", "Broadcast higlighter")
+        } else if (command.name ==="highlightPreviewWords") {
+            createOption(command.shortcut, "Highlight possible mistakes in checking", "Checking highlighter")
         }
         else if (command.name === "_execute_browser_action") {
         } else {
