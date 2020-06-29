@@ -6,7 +6,7 @@ const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", 
 "Paul", "Fletcher", "Coulton", "Gee", "Buchholz", "Hogan", "Nola", "Marino", "Josh", "Frydenberg", "Sukkar", "Hastie", "Dave", "Sharma", "Jane", "Hume", 
 "Mathias", "Cormann", "David", "Littleproud", "Sussan", "Ley", "Keith", "Pitt", "Trevor", "Evans", "Jonathon", "Duniam", "Simon", "Birmingham", "Alex", 
 "Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker",
-"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra"]
+"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra", "Coalition"]
 const possibleSubheadings = ["exclusive", "inside"]
 
 
