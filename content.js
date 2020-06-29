@@ -104,10 +104,10 @@ function checkingHighlights() {
                 else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return ' <span style="background-color:#8A2BE2;">' + submatch + "</span> "
                 return submatch;
             })
-            .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function(submatch) {
-                if (submatch.length > 0) return '<span style="background-color:#FF0000;">' + submatch + "</span>"
-                return submatch;
-            })
+        })
+        .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function(submatch) {
+            if (submatch.length > 0) return '<span style="background-color:#FF0000;">' + submatch + "</span>"
+            return submatch;
         })
     }
 }
