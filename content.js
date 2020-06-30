@@ -99,19 +99,29 @@ function highlightHeadlines(headline, headlinesChecked) {
     } else if (headlinesChecked.indexOf(headline.toLowerCase()) > -1) {
         editedHeadline = '<span style="background-color:#00FF00;">' + headline + "</span>" 
     }
-    console.log(headlinesChecked)
     headlinesChecked.push(headline.toLowerCase())
     return editedHeadline;
 }
 
 function checkingHighlights() {
+    let links = document.querySelectorAll("a");
     let items = [...document.getElementsByClassName("mj-column-per-100 outlook-group-fix")]
     .filter(item => item.children[0].tagName === "TABLE" 
     && item.children[0].children[0].tagName === "TBODY" 
     && (item.children[0].children[0].children.length === 5 || item.children[0].children[0].children.length === 4))
     let headlinesChecked = []
 
-    for (let i = 1; i < items.length; i++) {
+    for (let i = 0; i < links.length; i++) {
+        if (links[i].innerHTML === "Read Plain Text" || links[i].innerHTML === "Read More") break;
+
+        if (links[i].innerHTML.match(/MonitorReport\-/)) {
+            links[i].style.backgroundColor = "#00FF00"
+        }
+    }
+    let i = 0;
+    if (items[0].outerText.match(/LINKS/)) i++;
+
+    for (i; i < items.length; i++) {
         let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, "").replace("\n", "");
         let authorLine = items[i].children[0].children[0].children[1].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, "").replace("\n", "").split(", ")
 
