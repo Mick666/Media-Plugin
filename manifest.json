@@ -1,16 +1,16 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.4.9.3",
+    "version": "0.5.2",
     "options_page": "options.html",
     "content_scripts": [
         {
-            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*"],
+            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*", "https://mick666.github.io/SummsLinker/"],
             "js": ["content.js"]
         }
     ],
     "permissions": [
-        "clipboardWrite", "clipboardRead", "storage"
+        "clipboardWrite", "clipboardRead", "storage", "tabs"
     ],
     "icons": {
         "16": "images/icon-16.png",
@@ -76,6 +76,15 @@
                 "mac": "Command+Shift+Y"
             },
             "description": "Highlight possible mistakes in checking"
+        },
+        "copyIDs": {
+            "description": "Copy all visible items to the clipboard"
+        },
+        "openLinks": {
+            "description": "Open all saved links & copy them to the clipboard"
+        },
+        "addLink": {
+            "description": "Saves a link from your clipboard for later use"
         }
     }
 }

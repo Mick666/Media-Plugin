@@ -16,12 +16,22 @@ chrome.commands.onCommand.addListener(function (command) {
         highlightBroadcast()
     } else if (command === "highlightPreviewWords") {
         checkingWords()
+    } else if (command === "copyIDs") {
+        getAllIDs();
+    } else if (command === "addLink") {
+        addLink();
+    }  else if (command === "openLinks") {
+        openLinks();
     } else {
         copy("", command)
     } 
 });
-// This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
-const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", "CSIRO", "UK", "TPG", "CEO"]
+
+let savedLinks = [];
+
+//Common words which should capitalised in different ways
+const skipDecapping = ["PM", "MP", "ABC", "ACT", "NSW", "NT", "VIC", "QLD", "WA", "SA", "ANZ", "NAB", "ANU", "COVID-19", "BHP", "ALP", "LNP", "TAFE", "US", 
+"CSIRO", "UK", "TPG", "CEO", "COVID", "COVID-19", "PCYC", "STEM", "AGL", "ANSTO", "SBS", "GST", "AMP", "SMS", "ACIC", "NDIS", "RBA"]
 const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", "Daniel", "Andrews", "Victoria", "Queensland", "Tasmania", 
 "Annastacia", "Palaszczuk", "Gladys", "Berejiklian", "Mark", "McGowan", "Steven", "Marshall", "Peter", "Gutwein", "Andrew", "Barr", 
 "Michael", "Gunner", "Dutton", "Alan", "Tudge", "Kevin", "Rudd", "Anthony", "Albanese", "Tanya", "Plibersek", "Brendan", "O'Connor", 
@@ -29,10 +39,11 @@ const properNouns = ["British", "Australian", "Australia", "Scott", "Morrison", 
 "Paul", "Fletcher", "Coulton", "Gee", "Buchholz", "Hogan", "Nola", "Marino", "Josh", "Frydenberg", "Sukkar", "Hastie", "Dave", "Sharma", "Jane", "Hume", 
 "Mathias", "Cormann", "David", "Littleproud", "Sussan", "Ley", "Keith", "Pitt", "Trevor", "Evans", "Jonathon", "Duniam", "Simon", "Birmingham", "Alex", 
 "Hawke", "Christian", "Porter", "Richard", "Colbeck", "Coleman", "Linda", "Reynolds", "Darren", "Chester", "Angus", "Taylor", "Stuart", "Robert", "JobKeeper", "JobMaker", "JobSeeker",
-"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra", "Coalition"]
-// MPs
+"Melbourne", "Sydney", "Perth", "Darwin", "Adelaide", "Brisbane", "Hobart", "Canberra", "Coalition", "Huawei", "Premier", "Dan", "Tehan", "Chinese"]
+const possibleSubheadings = ["exclusive", "inside"];
 
-function copy(str, setting, decap) {
+// This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
+function copy(str, setting, decap = true) {
     var sandbox = document.getElementById('sandbox');
     if (setting === "1_paste") {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, "")
@@ -73,7 +84,12 @@ function copy(str, setting, decap) {
         sandbox.select();
         document.execCommand('copy');
         sandbox.value = ('');
-    } else {
+    } else if (setting === "copyIDs") {
+        sandbox.value = str;
+        sandbox.select();
+        document.execCommand('copy');
+        sandbox.value = ('');
+    }  else {
         chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(result) {
             console.log(result)
             console.log(setting);
@@ -94,6 +110,14 @@ function getHighlightedText(setting, decap) {
         chrome.tabs.sendMessage(tabs[0].id, {action: "getHighlightedText"}, function(response) {
           console.log(response);
           copy(response.copy, setting, decap)
+        });
+      });
+}
+
+function getAllIDs() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: "copyIDs"}, function(response) {
+          copy(response.copy, "copyIDs")
         });
       });
 }
@@ -142,12 +166,36 @@ function decapWord(word, i, nextWord) {
     return word;
 }
 
+function addLink() {
+    var sandbox = document.getElementById('sandbox');
+    sandbox.select();
+    document.execCommand('paste');
+    savedLinks.push(sandbox.value)
+    console.log(savedLinks)
+    sandbox.value = ('');
+}
+
+function openLinks() {
+    var sandbox = document.getElementById('sandbox');
+    sandbox.value = savedLinks.join("\n").replace(" ", "")
+    sandbox.select();
+    document.execCommand('copy');
+    sandbox.value = ('');
+    console.log(savedLinks)
+    for (let i = 0; i < savedLinks.length; i++) {
+        chrome.tabs.create({url: savedLinks[i], active: false})
+    }
+    savedLinks = [];
+}
+
 const isCapitalised = (word) => word.toUpperCase() === word;
 const toSentenceCase = (word) => word.split("").map((letter, index) => {
     if (index === 0) {
         return letter.toUpperCase();
     } else return letter.toLowerCase();
 }).join("")
+
+
 
 
 // ,

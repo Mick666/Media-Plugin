@@ -29,6 +29,7 @@ const itemGrid = document.getElementsByClassName("itemGrid")
 function createOption(hotkey, description, name) {
     let shortcut = document.createElement("p")
     shortcut.innerHTML = hotkey;
+    if (hotkey == "") shortcut.innerHTML = "Not bound"
     let desc = document.createElement("p");
     desc.innerHTML = description
     let comm = document.createElement("p")
@@ -48,6 +49,12 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, "Highlights broadcast items which need a word recapitalised", "Broadcast higlighter")
         } else if (command.name ==="highlightPreviewWords") {
             createOption(command.shortcut, "Highlight possible mistakes in checking", "Checking highlighter")
+        } else if (command.name ==="copyIDs") {
+            createOption(command.shortcut, "Copy all visible IDs", "ID copier")
+        } else if (command.name ==="addLink") {
+            createOption(command.shortcut, "Saves a link for later use", "Link saver")
+        } else if (command.name ==="openLinks") {
+            createOption(command.shortcut, "Opens all the saved links & copies them to the clipboard", "Link opener")
         }
         else if (command.name === "_execute_browser_action") {
         } else {
@@ -61,9 +68,14 @@ chrome.commands.getAll(function(commands) {
         }
     })
 })
-// ["Similar coverage reported by: ", "Also in other publications"]
-// ["Similar coverage reported by: ", "Also in other publications", "Click here to access PDF version of print articles", "Click here to access text version of print articles", "Click here to access combined PDF report of today's front pages", "Click here to access all print articles", "Click here to view all print articles", "Michael.Martino@isentia.com", 
-// "The Minister for Trade, Tourism and Investment is also mentioned in "X" in the Minister for Foreign Affairs section", "The Department of Foreign Affairs and Trade is also mentioned in \"X\" in the Minister for Foreign Affairs section"]
+// Click here to access PDF version of print articles
+// Click here to access text version of print articles
+// Click here to access combined PDF report of today's front pages
+// Click here to access all print articles
+// Click here to view all print articles
+// Michael.Martino@isentia.com
+// The Minister for Trade, Tourism and Investment is also mentioned in "X" in the Minister for Foreign Affairs section
+// The Department of Foreign Affairs and Trade is also mentioned in "X" in the Minister for Foreign Affairs section
 
 chrome.storage.local.get({staticText: ["Similar coverage reported by: ", "Also in other publications"]}, function(data){
     for (let i = 0; i < 10; i++) {

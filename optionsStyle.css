@@ -1,7 +1,10 @@
 body {
     margin: 40px;
-    background-color: white;
+    background-color: rgb(41, 40, 34);
     display: block;
+}
+div {
+    color: white;
 }
 
 .switch {
