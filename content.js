@@ -1,5 +1,5 @@
 const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
-    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA']
+    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN']
 const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
@@ -79,17 +79,18 @@ function highlightBroadcastItems() {
 }
 
 function cleanUpAuthorLines(byline) {
+    console.log(byline)
     if (byline.length > 1 && byline[1] === 'Letters') {
         byline[1] = "<span style='background-color:#8A2BE2;'>" + byline[1] + "</span>" 
     }
     if (byline.length < 4) return byline
-
+    let splitByline = byline[3].split(' ')
     if (byline[3].toUpperCase() === byline[3]) {
         byline[3] = "<span style='background-color:#FDFF47;'>" + byline[3] + "</span>" 
-    } else if (byline[3].split(' ').length === 1) {
+    } else if (splitByline.length === 1) {
         byline[3] = "<span style='background-color:#00FF00;'>" + byline[3] + "</span>" //Possible proper noun;
-    } else if (byline[3].split(' ').length > 2 && byline[3].search(/and/) === -1) {
-        if (byline[3].search(/van||le/i) === - 1) {
+    } else if (splitByline.length > 2 && byline[3].search(/and/) === -1) {
+        if (!/ van | le /i.test(byline[3])) {
             byline[3] = "<span style='background-color:#00FF00;'>" + byline[3] + "</span>" //Possible proper noun
         }
         return byline
@@ -125,8 +126,8 @@ function checkingHighlights() {
             links[i].style.backgroundColor = '#00FF00'
         }
     }
-    let i = 0;
-    if (items[0].outerText.match(/LINKS/)) i++;
+    let i = 0
+    if (items[0].outerText.match(/LINKS|EXECUTIVE SUMMARY/)) i++
 
     for (i; i < items.length; i++) {
         let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '');
