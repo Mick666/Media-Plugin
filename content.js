@@ -16,6 +16,19 @@ chrome.storage.local.get({disableLinks: true}, function(data){
     if (data.disableLinks && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  document.body.addEventListener('mouseover', func)
 })
 
+chrome.storage.local.get({readmoreScroll: true}, function(data){
+    if (data.readmoreScroll){
+        document.addEventListener('mousedown', function(e) {
+            if (e.target.outerText === ' Read More') {
+                setTimeout(function(){
+                    e.target.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].scrollIntoView(true)
+                    window.scrollTo(window.scrollX, window.scrollY-150)
+                }, 1000)
+            }
+        })
+    }
+})
+
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.disableLinks === 'switch') {
