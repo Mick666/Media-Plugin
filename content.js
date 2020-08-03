@@ -13,7 +13,7 @@ const possibleSubheadings = ['exclusive', 'inside']
 
 
 chrome.storage.local.get({disableLinks: true}, function(data){
-    if (data.disableLinks && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  document.body.addEventListener('mouseover', func)
+    if (data.disableLinks && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  document.body.addEventListener('scroll', func)
 })
 
 chrome.storage.local.get({readmoreScroll: true}, function(data){
@@ -29,6 +29,29 @@ chrome.storage.local.get({readmoreScroll: true}, function(data){
     }
 })
 
+document.addEventListener('mousedown', function(e) {
+    if (e.target.nodeName === 'H4' && / Brief| Folder/.test(e.target.parentElement.outerText)) {
+        document.title = e.target.innerText
+    } else if (e.target.nodeName === 'SPAN' && e.target.parentElement.nodeName === 'A') {
+        if (e.target.outerText === ' Coverage') {
+            document.title = 'Mediaportal Coverage'
+        } else if (e.target.outerText === ' Report Builder') {
+            document.title = 'Report Builder'
+        }
+    }
+})
+
+window.onload = function() {
+    if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
+        document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
+    }
+}
+
+document.addEventListener('scroll', function() {
+    let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
+    links.map(link => link.href = '')
+})
+
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.disableLinks === 'switch') {
@@ -37,22 +60,24 @@ chrome.runtime.onMessage.addListener(
     }
 )
     
-function func(event) {
-    if (event.target.href && (/app\.mediaportal\.com\/#\/connect\/media-contact/.test(event.target.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.href))) {
-        event.target.href = ''
-    }
-    if (event.target.parentElement.href && /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.href)) {
-        event.target.parentElement.href = ''
-    } else if (event.target.parentElement.href && event.target.parentElement.parentElement.href && /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.parentElement.href)) {
-        event.target.parentElement.href = ''
-    } else if (event.target.parentElement && 
-            event.target.parentElement.parentElement &&
-            event.target.parentElement.parentElement.parentElement &&
-            event.target.parentElement.parentElement.parentElement.parentElement &&
-            event.target.parentElement.parentElement.parentElement.parentElement.href && 
-            /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.parentElement.parentElement.parentElement.href)) {
-        event.target.parentElement.parentElement.parentElement.parentElement.href = ''
-    }
+function func() {
+    let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
+    links.map(link => link.href = '')
+    // if (event.target.href && (/app\.mediaportal\.com\/#\/connect\/media-contact/.test(event.target.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.href))) {
+    //     event.target.href = ''
+    // }
+    // if (event.target.parentElement.href && /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.href)) {
+    //     event.target.parentElement.href = ''
+    // } else if (event.target.parentElement.href && event.target.parentElement.parentElement.href && /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.parentElement.href)) {
+    //     event.target.parentElement.href = ''
+    // } else if (event.target.parentElement && 
+    //         event.target.parentElement.parentElement &&
+    //         event.target.parentElement.parentElement.parentElement &&
+    //         event.target.parentElement.parentElement.parentElement.parentElement &&
+    //         event.target.parentElement.parentElement.parentElement.parentElement.href && 
+    //         /app\.mediaportal\.com\/#connect\/media-outlet/.test(event.target.parentElement.parentElement.parentElement.parentElement.href)) {
+    //     event.target.parentElement.parentElement.parentElement.parentElement.href = ''
+    // }
 }
 
     
