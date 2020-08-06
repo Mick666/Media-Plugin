@@ -3,7 +3,7 @@ const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA'
 const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
-    'Michaelia', 'Parliament', 'House', 'Prime', 'Minister', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
+    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
     'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
     'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
@@ -26,7 +26,9 @@ function func() {
 
 
 function greyOutAutomatedBroadcast() {
-    let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')].filter(item => !item.className.includes('edited') && item.firstChild.innerText.startsWith('Item ID: R'))
+    let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')].filter(item => !item.className.includes('edited') && 
+    item.firstChild && 
+    item.firstChild.innerText.startsWith('Item ID: R'))
     items.forEach(item => {
         item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
         item.className += ' edited'
@@ -48,19 +50,20 @@ chrome.storage.local.get({readmoreScroll: true}, function(data){
 
 document.addEventListener('mousedown', function(e) {
     if (e.button !== 0 || e.ctrlKey || !e.target) return
-
-    if ((e.target.parentElement.className === 'coverage-anchor' ||  e.target.className === 'coverage-anchor') && / Brief| Folder/.test(e.target.parentElement.outerText)) {
-        document.title = e.target.outerText.trimEnd()
+    if (((e.target.className && e.target.className === 'coverage-anchor') || 
+        (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
+        (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel')) 
+        && / Brief| Folder/.test(e.target.parentElement.outerText)) {
+        if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
+        else document.title = e.target.outerText.trimEnd()
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
         document.title = 'Mediaportal Coverage'
     } else if (e.target.nodeName === 'A' && e.target.outerText === ' Coverage') {
         document.title = 'Mediaportal Coverage'
-    } else if (e.target.parentElement.nodeName === 'A') {
-        if (e.target.outerText === ' Coverage') {
-            document.title = 'Mediaportal Coverage'
-        } else if (e.target.outerText === ' Report Builder') {
-            document.title = 'Report Builder'
-        }
+    } else if (e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
+        document.title = 'Mediaportal Coverage'
+    } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
+        document.title = 'Report Builder'
     } 
 })
 
@@ -133,12 +136,23 @@ function highlightBroadcastItems() {
     }
 }
 
+
+const datesForChecks = getLastThreeDates()
+const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydney Morning Herald', 'Sun Herald',
+    'Daily Telegraph', 'Sunday Telegraph', 'Age', 'Sunday Age', 'Herald Sun', 'Sunday Herald Sun', 'Canberra Times',
+    'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide', 
+    'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian', 
+    'The Australian', 'AFR Weekend ']
+
 function cleanUpAuthorLines(byline) {
-    console.log(byline)
     if (byline.length > 1 && byline[1] === 'Letters') {
         byline[1] = "<span style='background-color:#8A2BE2;'>" + byline[1] + "</span>" 
     }
+    if (byline.length < 3) return byline
+    byline[2] = checkContentDates(byline[2], byline[0], byline[1])
     if (byline.length < 4) return byline
+
+
     let splitByline = byline[3].split(' ')
     if (byline[3].toUpperCase() === byline[3]) {
         byline[3] = "<span style='background-color:#FDFF47;'>" + byline[3] + "</span>" 
@@ -155,7 +169,29 @@ function cleanUpAuthorLines(byline) {
     return byline
 }
 
-function highlightHeadlines(headline, headlinesChecked) {
+   
+function checkContentDates(date, outlet, mediatype) {
+    if (!date || date.length === 0) return date
+    let contentDate = new Date(Date.parse(date.replace(/([0-9]{2})\/([0-9]{2})/, '$2/$1')))
+
+    if (metroPapers.includes(outlet) && mediatype !== 'Other' && contentDate < datesForChecks[0]) {
+        return  "<span style='background-color:#8A2BE2;'>" + date + "</span>" // possible old content
+    } else if (contentDate < datesForChecks[2]) {
+        return  "<span style='background-color:#8A2BE2;'>" + date + "</span>" // possible old content
+    }
+    return date
+}
+
+function getLastThreeDates() {
+    let todaysDate = new Date(new Date().setHours(0,0,0,0))
+    let dayBefore = new Date().setDate(todaysDate.getDate()-1)
+    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate()-2)
+    return [todaysDate, dayBefore, dayBeforeYesterday]
+}
+
+
+function highlightHeadlines(headline, headlinesChecked, headlineStyle) {
+    if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
     let editedHeadline = headline
     if (headline.toUpperCase() === headline) {
         editedHeadline = "<span style='background-color:#FDFF47;'>" + headline + "</span>" 
@@ -185,12 +221,12 @@ function checkingHighlights() {
     if (items[0].outerText.match(/LINKS|EXECUTIVE SUMMARY/)) i++
 
     for (i; i < items.length; i++) {
-        let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '');
+        let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
         let authorLine = items[i].children[0].children[0].children[1].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
+        let headlineStyle = items[i].children[0].children[0].children[0].children[0].children[0].style.cssText
 
-        items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = highlightHeadlines(headline, headlinesChecked);
+        items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = highlightHeadlines(headline, headlinesChecked, headlineStyle)
         items[i].children[0].children[0].children[1].children[0].children[0].innerHTML = cleanUpAuthorLines(authorLine).join(', ')
-
 
         items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML =
         items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
