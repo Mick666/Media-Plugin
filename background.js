@@ -22,16 +22,23 @@ chrome.commands.onCommand.addListener(function (command) {
         addLink()
     }  else if (command === 'openLinks') {
         openLinks()
+    }  else if (command === 'saveID') {
+        saveID()
+    } else if (command === 'copyID') {
+        copyID()
+    }  else if (command === 'deleteIDs') {
+        deleteIDs()
     } else {
         copy('', command)
     } 
 })
 
 let savedLinks = []
+let savedIDs = []
 
 //Common words which should capitalised in different ways
 const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
-    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN']
+    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
 const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr', 
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor', 
@@ -170,6 +177,29 @@ function openLinks() {
         chrome.tabs.create({url: savedLinks[i], active: false})
     }
     savedLinks = []
+}
+
+function saveID() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: 'getHighlightedText'}, function(response) {
+            if (!isNaN(response.copy.replace('Item ID: ', '').substring(1))) {
+                savedIDs.push(response.copy.replace('Item ID: ', ''))
+            }
+        })
+    })
+}
+
+function copyID() {
+    console.log(savedIDs)
+    var sandbox = document.getElementById('sandbox')
+    sandbox.value = savedIDs.join('\n').replace(' ', '')
+    sandbox.select()
+    document.execCommand('copy')
+    sandbox.value = ('')
+}
+
+function deleteIDs() {
+    savedIDs = []
 }
 
 const isCapitalised = (word) => word.toUpperCase() === word

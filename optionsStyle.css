@@ -1,6 +1,6 @@
 body {
     margin: 40px;
-    background-color: rgb(41, 40, 34);
+    background-color: rgb(32, 33, 36);
     display: block;
 }
 div {
@@ -90,6 +90,7 @@ input:checked + .slider:before {
     box-shadow: 3px 3px #888888;
     padding-left: 10px;
     padding-right: 10px;
+    background-color: rgb(41,42,45);
 }
 .reminderText {
     margin-bottom: 10px;

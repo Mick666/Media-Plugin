@@ -1,5 +1,5 @@
-const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
-    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN']
+const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
 const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
@@ -10,13 +10,16 @@ const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 const possibleSubheadings = ['exclusive', 'inside']
 //A, The
+let seenIDs = []
+let listenerOptions = [true, true, true]
 
-
-chrome.storage.local.get({disableLinks: true}, function(data){
-    if (data.disableLinks && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
+chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
+    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
         document.addEventListener('scroll', func)
+        listenerOptions = data.listenerOptions
     }
 })
+
 
 function func() {
     let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
@@ -24,14 +27,22 @@ function func() {
     greyOutAutomatedBroadcast()
 }
 
-
 function greyOutAutomatedBroadcast() {
-    let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')].filter(item => !item.className.includes('edited') && 
-    item.firstChild && 
-    item.firstChild.innerText.startsWith('Item ID: R'))
+    let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
+        .filter(item => !item.className.includes('edited') && 
+        item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
+
     items.forEach(item => {
-        item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-        item.className += ' edited'
+        if (listenerOptions[0] && item.firstChild.innerText.startsWith('Item ID: R')){
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+            item.className += ' edited'
+        }else if (listenerOptions[1] && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+            item.className += ' edited'
+        } else if (listenerOptions[2] && !item.className.includes('master')) {
+            seenIDs.push(item.firstChild.innerText)
+            item.className += ' master'
+        }
     })
 }
 
@@ -100,13 +111,6 @@ chrome.runtime.onMessage.addListener(
 //         e.preventDefault()
 //     }
 // }, false)
-    
-function switchLinkDisabler() {
-    chrome.storage.local.get({disableLinks: true}, function(data){
-        if (data.disableLinks)  document.body.addEventListener('mouseover', func)
-        else document.body.removeEventListener('mouseover', func)
-    })
-}
     
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
@@ -185,7 +189,7 @@ function checkContentDates(date, outlet, mediatype) {
 function getLastThreeDates() {
     let todaysDate = new Date(new Date().setHours(0,0,0,0))
     let dayBefore = new Date().setDate(todaysDate.getDate()-1)
-    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate()-2)
+    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate()-3)
     return [todaysDate, dayBefore, dayBeforeYesterday]
 }
 

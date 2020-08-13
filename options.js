@@ -1,15 +1,56 @@
+function getEventListenerOptions() {
+    return new Promise(options => {
+        chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
+            options(data.listenerOptions)
+        })
+    })
+}
+
+window.addEventListener('load', async () => {
+    let listenerOptions = await getEventListenerOptions()
+    let optionCheckboxes = document.getElementsByClassName('listenerOptions')
+    for (let i = 0; i < optionCheckboxes.length; i++) {
+        optionCheckboxes[i].children[0].checked = listenerOptions[i]
+        console.log(optionCheckboxes[i].children[0].checked)
+    }
+
+    chrome.storage.local.get({readmoreScroll: true}, function(data){
+        document.getElementById('readmore').children[0].checked = data.readmoreScroll
+    })
+
+    chrome.storage.local.get({decap: true}, function(data){
+        console.log(document.getElementById('decap').children[0])
+        console.log(data.decap)
+        document.getElementById('decap').children[0].checked = data.decap
+    })
+})
+
 document.getElementById('hotkey').onclick = event => {
     chrome.tabs.create({url: 'chrome://extensions/configureCommands'})
     event.preventDefault()
 }
-document.getElementById('switch').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        chrome.storage.local.set({disableLinks: true}, function() {
-        })
-    } else {
-        chrome.storage.local.set({disableLinks: false}, function() {
-        })
-    }
+document.getElementById('switch').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getEventListenerOptions()
+    eventListenerOptions[0] = e.target.checked
+    console.log(eventListenerOptions)
+    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    })
+})
+
+document.getElementById('automated').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getEventListenerOptions()
+    eventListenerOptions[1] = e.target.checked
+    console.log(eventListenerOptions)
+    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    })
+})
+
+document.getElementById('repeated').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getEventListenerOptions()
+    eventListenerOptions[2] = e.target.checked
+    console.log(eventListenerOptions)
+    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    })
 })
 
 document.getElementById('readmore').addEventListener('change', function(e) {
@@ -40,7 +81,7 @@ function createOption(hotkey, description, name) {
     let shortcut = document.createElement('p')
     shortcut.innerHTML = hotkey
     if (hotkey == '') shortcut.innerHTML = 'Not bound'
-    let desc = document.createElement('p');
+    let desc = document.createElement('p')
     desc.innerHTML = description
     let comm = document.createElement('p')
     comm.innerHTML = name
@@ -49,7 +90,6 @@ function createOption(hotkey, description, name) {
     itemGrid[2].appendChild(desc)
 }
 chrome.commands.getAll(function(commands) {
-    console.log(commands)
     commands.map((command)=> {
         if (command.name === '1_paste') {
             createOption(command.shortcut, 'Removes linebreaks from copied text', 'Linebreak copy')
@@ -60,11 +100,17 @@ chrome.commands.getAll(function(commands) {
         } else if (command.name ==='highlightPreviewWords') {
             createOption(command.shortcut, 'Highlight possible mistakes in checking', 'Checking highlighter')
         } else if (command.name ==='copyIDs') {
-            createOption(command.shortcut, 'Copy all visible IDs', 'ID copier')
+            createOption(command.shortcut, 'Copy all visible IDs', 'All visible IDs copier')
         } else if (command.name ==='addLink') {
             createOption(command.shortcut, 'Saves a link for later use', 'Link saver')
         } else if (command.name ==='openLinks') {
             createOption(command.shortcut, 'Opens all the saved links & copies them to the clipboard', 'Link opener')
+        } else if (command.name ==='saveID') {
+            createOption(command.shortcut, 'Saves a highlighted ID for later use', 'Individual ID saver')
+        } else if (command.name ==='copyID') {
+            createOption(command.shortcut, 'Copies all saved IDs to your clipboard', 'Individual ID copier')
+        } else if (command.name ==='deleteIDs') {
+            createOption(command.shortcut, 'Deletes all saved IDs', 'ID deleter')
         }
         else if (command.name === '_execute_browser_action') {
         } else {
@@ -96,11 +142,12 @@ chrome.storage.local.get({staticText: ['Similar coverage reported by: ', 'Also i
         itemGrid[2].appendChild(setting)
     }
 })
-document.getElementById('save').addEventListener('click',
-    saveOptions)
+document.getElementById('save').addEventListener('click', saveOptions)
 
-function saveOptions() {
-    const optionsHTML = document.getElementsByClassName('staticText');
+function saveOptions(e) {
+    e.target.innerText = 'Saved!'
+    setTimeout(function(){ e.target.innerText = 'Save' }, 5000)
+    const optionsHTML = document.getElementsByClassName('staticText')
     let options = []
     for (let i = 0; i < optionsHTML.length; i++) {
         options.push(optionsHTML[i].value)

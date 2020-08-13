@@ -12,7 +12,19 @@
     <div class="container">
         <h2>Mediaportal Improvement plugin options</h2>
         <div class="switchContainer">
-            Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch">
+            Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch listenerOptions">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="switchContainer">
+            Grey out automated broadcast: <label id="automated" class="switch listenerOptions">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="switchContainer">
+            Grey out repeated items: <label id="repeated" class="switch listenerOptions">
                 <input type="checkbox" checked>
                 <span class="slider round"></span>
             </label>
