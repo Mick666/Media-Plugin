@@ -37,9 +37,9 @@ let savedLinks = []
 let savedIDs = []
 
 //Common words which should capitalised in different ways
-const skipDecapping = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+const defaultCopyCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
     'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
-const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
+const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr', 
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor', 
     'Michaelia', 'Cash', 'Parliament', 'House', 'Prime', 'Minister', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
@@ -48,8 +48,26 @@ const properNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 
+function getCopyCaps() {
+    return new Promise(options => {
+        chrome.storage.local.get({copyCaps: defaultCopyCaps}, function(data){
+            options(data.copyCaps)
+        })
+    })
+}
+function getCopyPropers() {
+    return new Promise(options => {
+        chrome.storage.local.get({copyPropers: defaultProperNouns}, function(data){
+            options(data.copyPropers)
+        })
+    })
+}
+
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
-function copy(str, setting, decap = true) {
+async function copy(str, setting, decap = true) {
+    let properNouns = await getCopyPropers()
+    let skipDecapping = await getCopyCaps()
+    console.log(properNouns)
     var sandbox = document.getElementById('sandbox')
     if (setting === '1_paste') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
@@ -60,7 +78,7 @@ function copy(str, setting, decap = true) {
             .split(' ')
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
-                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1])
+                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1], properNouns, skipDecapping)
                 else words[i] = decapWord(words[i], i)
             }
         }
@@ -83,7 +101,8 @@ function copy(str, setting, decap = true) {
             .join(' ').split(' ')
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
-                words[i] = decapWord(words[i], i)
+                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1], properNouns, skipDecapping)
+                else words[i] = decapWord(words[i], i)
             }
         }
         sandbox.value = words.join(' ')
@@ -105,9 +124,6 @@ function copy(str, setting, decap = true) {
             sandbox.value = ('')
         })
     } 
-    // else if (setting === 'static-text-2') {
-    //     sandbox.value = 'Also in other publications'
-    // } 
 }
 
 // This gets the highlighted text from the webpage.
@@ -138,7 +154,7 @@ function checkingWords() {
         chrome.tabs.sendMessage(tabs[0].id, {action: 'checkingWords'})
     })
 }
-function decapWord(word, i, nextWord) {
+function decapWord(word, i, nextWord, properNouns, skipDecapping) {
     const splitWord = word.split('\'')
     if (isCapitalised(word) && skipDecapping.indexOf(word) === -1) {
         if (properNouns.indexOf(toSentenceCase(word)) > -1 || i === 0) {
@@ -149,11 +165,12 @@ function decapWord(word, i, nextWord) {
             return word
         } else if (word.toUpperCase() === 'MPS') return 'MPs' 
         else if (word.toLowerCase() === 'federal' && (nextWord === 'Government' || nextWord === 'GOVERNMENT')) return 'Federal'
-
         return word.toLowerCase()
-    } else if (skipDecapping.indexOf(word) > -1) {
+    } else if (skipDecapping.indexOf(word.toUpperCase()) > -1) {
         return word.toUpperCase() 
-    } 
+    } else if (properNouns.includes(toSentenceCase(word))) {
+        return toSentenceCase(word)
+    }
     return word
 }
 

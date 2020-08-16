@@ -1,3 +1,24 @@
+const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
+const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
+    'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
+    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
+    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
+    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
+    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
+    'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
+    'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
+const defaultCopyCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
+const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
+    'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr', 
+    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor', 
+    'Michaelia', 'Cash', 'Parliament', 'House', 'Prime', 'Minister', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
+    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
+    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
+    'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
+    'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
+
 function getEventListenerOptions() {
     return new Promise(options => {
         chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
@@ -5,13 +26,57 @@ function getEventListenerOptions() {
         })
     })
 }
+function getCheckingCaps() {
+    return new Promise(options => {
+        chrome.storage.local.get({checkingCaps: defaultCheckCaps}, function(data){
+            options(data.checkingCaps)
+        })
+    })
+}
+function getCheckingPropers() {
+    return new Promise(options => {
+        chrome.storage.local.get({checkingPropers: defaultCheckProperNouns}, function(data){
+            options(data.checkingPropers)
+        })
+    })
+}
+function getCopyCaps() {
+    return new Promise(options => {
+        chrome.storage.local.get({copyCaps: defaultCopyCaps}, function(data){
+            options(data.copyCaps)
+        })
+    })
+}
+function getCopyPropers() {
+    return new Promise(options => {
+        chrome.storage.local.get({copyPropers: defaultProperNouns}, function(data){
+            options(data.copyPropers)
+        })
+    })
+}
+
+async function loadTextFieldData() {
+    let checkingCaps = await getCheckingCaps()
+    let checkingPropers = await getCheckingPropers()
+    let checkingCopyCaps = await getCopyCaps()
+    let checkingCopyPropers = await getCopyPropers()
+    document.getElementById('decapCaps').value = checkingCaps.join(', ').replace(/ {2,}/g, ' ')
+    document.getElementById('decapPropers').value = checkingPropers.join(', ').replace(/ {2,}/g, ' ')
+    document.getElementById('checkingCaps').value = checkingCopyCaps.join(', ').replace(/ {2,}/g, ' ')
+    document.getElementById('checkingPropers').value = checkingCopyPropers.join(', ').replace(/ {2,}/g, ' ')
+    let wordList = document.getElementsByClassName('wordlist')
+    for (let i = 0; i < wordList.length; i++) {
+        wordList[i].rows = 25
+        wordList[i].cols = 75
+    }
+}
 
 window.addEventListener('load', async () => {
+    document.getElementById('options').style.display = 'block'
     let listenerOptions = await getEventListenerOptions()
     let optionCheckboxes = document.getElementsByClassName('listenerOptions')
     for (let i = 0; i < optionCheckboxes.length; i++) {
         optionCheckboxes[i].children[0].checked = listenerOptions[i]
-        console.log(optionCheckboxes[i].children[0].checked)
     }
 
     chrome.storage.local.get({readmoreScroll: true}, function(data){
@@ -19,10 +84,9 @@ window.addEventListener('load', async () => {
     })
 
     chrome.storage.local.get({decap: true}, function(data){
-        console.log(document.getElementById('decap').children[0])
-        console.log(data.decap)
         document.getElementById('decap').children[0].checked = data.decap
     })
+    loadTextFieldData()
 })
 
 document.getElementById('hotkey').onclick = event => {
@@ -32,7 +96,6 @@ document.getElementById('hotkey').onclick = event => {
 document.getElementById('switch').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[0] = e.target.checked
-    console.log(eventListenerOptions)
     chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
     })
 })
@@ -40,7 +103,6 @@ document.getElementById('switch').addEventListener('change', async function(e) {
 document.getElementById('automated').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[1] = e.target.checked
-    console.log(eventListenerOptions)
     chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
     })
 })
@@ -48,7 +110,6 @@ document.getElementById('automated').addEventListener('change', async function(e
 document.getElementById('repeated').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[2] = e.target.checked
-    console.log(eventListenerOptions)
     chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
     })
 })
@@ -113,6 +174,14 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Deletes all saved IDs', 'ID deleter')
         }
         else if (command.name === '_execute_browser_action') {
+        } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
+            let shortcut = document.createElement('p')
+            shortcut.innerHTML = command.shortcut
+            if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'
+            let desc = document.createElement('p')
+            desc.innerHTML = command.description
+            itemGrid[4].appendChild(shortcut)
+            itemGrid[3].appendChild(desc)
         } else {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
@@ -139,7 +208,7 @@ chrome.storage.local.get({staticText: ['Similar coverage reported by: ', 'Also i
         setting.value = data.staticText[i] || ''
         setting.className = 'staticText'
         // console.log(setting)
-        itemGrid[2].appendChild(setting)
+        itemGrid[5].appendChild(setting)
     }
 })
 document.getElementById('save').addEventListener('click', saveOptions)
@@ -152,7 +221,46 @@ function saveOptions(e) {
     for (let i = 0; i < optionsHTML.length; i++) {
         options.push(optionsHTML[i].value)
     }
+    let decapCapsValues = document.getElementById('decapCaps').value.replace(/, {1,}/g, ',').split(',')
+    let decapPropersValues = document.getElementById('decapPropers').value.replace(/, {1,}/g, ',').split(',')
+    let checkingCopyCapsValues = document.getElementById('checkingCaps').value.replace(/, {1,}/g, ',').split(',')
+    let checkingCopyPropersValues = document.getElementById('checkingPropers').value.replace(/, {1,}/g, ',').split(',')
     chrome.storage.local.set({staticText: options}, function() {
-        console.log(options)
     })
+    chrome.storage.local.set({checkingCaps: checkingCopyCapsValues}, function() {
+    })
+    chrome.storage.local.set({checkingPropers: checkingCopyPropersValues}, function() {
+    })
+    chrome.storage.local.set({copyCaps: decapCapsValues}, function() {
+    })
+    chrome.storage.local.set({copyPropers: decapPropersValues}, function() {
+    })
+}
+
+const tabLinks = document.getElementsByClassName('tablinks')
+for (let i = 0; i < tabLinks.length; i++) {
+    tabLinks[i].addEventListener('mousedown', openTab)
+}
+
+function openTab(evt) {
+    if (!evt) return
+    let tabID = document.getElementById(evt.target.id)
+    // Declare all variables
+    var i, tabcontent, tablinks
+
+    // Get all elements with class="tabcontent" and hide them
+    tabcontent = document.getElementsByClassName('tabcontent')
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = 'none'
+    }
+
+    // Get all elements with class="tablinks" and remove the class "active"
+    tablinks = document.getElementsByClassName('tablinks')
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(' active', '')
+    }
+
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(tabID.dataset.key).style.display = 'block'
+    evt.currentTarget.className += ' active'
 }

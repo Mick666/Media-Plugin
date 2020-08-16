@@ -1,11 +1,11 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.5.7",
+    "version": "0.5.9",
     "options_page": "options.html",
     "content_scripts": [
         {
-            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*", "https://mick666.github.io/SummsLinker/"],
+            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*", "https://mick666.github.io/SummsLinker/", "https://docs.google.com/*"],
             "js": ["content.js"]
         }
     ],

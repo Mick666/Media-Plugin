@@ -11,63 +11,116 @@
 <body>
     <div class="container">
         <h2>Mediaportal Improvement plugin options</h2>
-        <div class="switchContainer">
-            Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
+        <div class="tab">
+            <button class="tablinks" id='optionsTab' data-key='options'>Options</button>
+            <button class="tablinks" id='staticTextTab' data-key='statictext'>Static Text</button>
+            <button class="tablinks" id='smartDecapTab' data-key='smartdecap'>Smart decapping words</button>
+            <button class="tablinks" id='checkingTab' data-key='smartcheck'>Checking tool</button>
+          </div>
+        <div id='options' class='tabcontent active'>
+            <div class="switchContainer">
+                Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="switchContainer">
+                Grey out automated broadcast: <label id="automated" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="switchContainer">
+                Grey out repeated items: <label id="repeated" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="switchContainer">
+                Decapitalise text when using alternate copy shortcuts: <label id="decap" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="switchContainer">
+                Scroll back to the top of an item after clicking 'Read more': <label id="readmore" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div id="parentGrid">
+                <div class="subGrid">
+                    <h4>Command</h6>
+                    <div class="itemGrid"> 
+                    </div>
+                </div>
+                <div class="subGrid" id='hotkeys'>
+                    <h4>Hotkey</h6>
+                    <div class="itemGrid">       
+                    </div>
+                </div>
+                <div class="subGrid">
+                    <h4>Action</h6>
+                    <div class="itemGrid"> 
+                    </div>        
+                </div>
+            </div>
         </div>
-        <div class="switchContainer">
-            Grey out automated broadcast: <label id="automated" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="switchContainer">
-            Grey out repeated items: <label id="repeated" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="switchContainer">
-            Decapitalise text when using alternate copy shortcuts: <label id="decap" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="switchContainer">
-            Scroll back to the top of an item after clicking 'Read more': <label id="readmore" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="parentGrid">
-            <div class="subGrid">
-                <h4>Command</h6>
+        <div id='statictext' class='tabcontent'>
+            <div id="parentGrid">
+                <div class="subGrid">
+                    <h4>Static Text</h6>
                     <div class="itemGrid"> 
                     </div>
                 </div>
                 <div class="subGrid">
                     <h4>Hotkey</h6>
-                        <div class="itemGrid"> 
-                            
-                        </div>
+                    <div class="itemGrid">       
                     </div>
-                    <div class="subGrid">
-                        <h4>Action</h6>
-                            <div class="itemGrid"> 
-                                
-                            </div>
-                            
-                        </div>
-                    </div>
-                    <div class="reminderText">
-                    To edit the hotkeys, visit <a id="hotkey" href="chrome://extensions/shortcuts">the relevant Extensions page in Chrome</a> <br>
                 </div>
-                    <button class="reminderText" id="save">Save</button>
+                <div class="subGrid">
+                    <h4>Action</h6>
+                    <div class="itemGrid"> 
+                    </div>        
+                </div>
+            </div>
+        </div>
+        <div id='smartdecap' class='tabcontent'>
+            Each word needs to be separated by a comma. The words used in these fields will be used by the plugin when using the alternate copy options.
+            <div id="decapGrid">
+                <div class="subGrid">
+                    <h4>Words to keep capitalised</h6>
+                    <textarea class="decap wordlist" id='decapCaps'> 
+                    </textarea>
+                </div>
+                <div class="subGrid">
+                    <h4>Proper nouns</h6>
+                    <textarea class="decap wordlist" id='decapPropers'>       
+                    </textarea>
+                </div>
+            </div>
+        </div>
+        <div id='smartcheck' class='tabcontent'>
+            Each word needs to be separated by a comma. The words used in these fields will be used by the checking tool when looking for incorrectly capitalised words.
+            <div id="decapGrid">
+                <div class="subGrid">
+                    <h4>Words to keep capitalised</h6>
+                    <textarea class="checking wordlist" id='checkingCaps'> 
+                    </textarea>
+                </div>
+                <div class="subGrid">
+                    <h4>Proper nouns</h6>
+                    <textarea class="checking wordlist" id='checkingPropers'>       
+                    </textarea>
+                </div>
+            </div>
+        </div>
+        <div class="reminderText">
+            To edit the hotkeys, visit <a id="hotkey" href="chrome://extensions/shortcuts">the relevant Extensions page in Chrome</a> <br>
+        </div>
+        <button class="reminderText" id="save">Save</button>
 
     </div>
-                
-                <script src="options.js"></script>
-            </body>
-            </html>
+    <script src="options.js"></script>
+</body>
+</html>
