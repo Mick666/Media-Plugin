@@ -13,7 +13,7 @@ let seenIDs = []
 let listenerOptions = [true, true, true]
 
 chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
-    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
+    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings'  && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view' )  {
         document.addEventListener('scroll', func)
         listenerOptions = data.listenerOptions
     }
@@ -243,12 +243,13 @@ function getLastThreeDates() {
 
 
 function highlightHeadlines(headline, headlinesChecked, headlineStyle) {
-    if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
+    console.log(headline)
+    // if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
     let editedHeadline = headline
     if (headline.toUpperCase() === headline) {
         editedHeadline = '<span style=\'background-color:#FDFF47;\'>' + headline + '</span>'
     } else if (headlinesChecked.indexOf(headline.toLowerCase()) > -1) {
-        editedHeadline = '<span style=\'background-color:#00FF00;\'>' + headline + '</span>'
+        editedHeadline = '<span style=\'background-color:#8A2BE2;\'>' + headline + '</span>'
     }
     headlinesChecked.push(headline.toLowerCase())
     return editedHeadline
@@ -300,9 +301,12 @@ async function checkingHighlights() {
         let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
         let authorLine = items[i].children[0].children[0].children[1].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
         let headlineStyle = items[i].children[0].children[0].children[0].children[0].children[0].style.cssText
-
-        items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = highlightHeadlines(headline, headlinesChecked, headlineStyle)
-        items[i].children[0].children[0].children[1].children[0].children[0].innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
+        if (!/[^ \n]/.test(items[i].children[0].children[0].children[1].children[0].children[0].innerHTML)) {
+            items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = cleanUpAuthorLines(headline.split(', '), isIndustry).join(', ')
+        } else {
+            items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = highlightHeadlines(headline, headlinesChecked, headlineStyle)
+            items[i].children[0].children[0].children[1].children[0].children[0].innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
+        }
 
         items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML =
         items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')

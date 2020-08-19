@@ -7,6 +7,10 @@ div {
     color: white;
 }
 
+a {
+    color: lightblue;
+}
+
 .switch {
     position: relative;
     display: inline-block;
