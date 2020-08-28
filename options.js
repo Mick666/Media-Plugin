@@ -79,6 +79,10 @@ window.addEventListener('load', async () => {
         optionCheckboxes[i].children[0].checked = listenerOptions[i]
     }
 
+    chrome.storage.local.get({heroSentenceOption: true}, function(data){
+        document.getElementById('heroSentence').children[0].checked = data.heroSentenceOption
+    })
+
     chrome.storage.local.get({readmoreScroll: true}, function(data){
         document.getElementById('readmore').children[0].checked = data.readmoreScroll
     })
@@ -93,6 +97,12 @@ document.getElementById('hotkey').onclick = event => {
     chrome.tabs.create({url: 'chrome://extensions/configureCommands'})
     event.preventDefault()
 }
+
+document.getElementById('heroSentence').addEventListener('change', async function(e) {
+    chrome.storage.local.set({heroSentenceOption: e.target.checked}, function() {
+    })
+})
+
 document.getElementById('switch').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[0] = e.target.checked

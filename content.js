@@ -11,6 +11,7 @@ const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 
 const possibleSubheadings = ['exclusive', 'inside']
 let seenIDs = []
 let listenerOptions = [true, true, true]
+let checkingHasRun = false
 
 chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings'  && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view' )  {
@@ -19,9 +20,20 @@ chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
     }
 })
 
+chrome.storage.local.get({heroSentenceOption: true}, function(data){
+    if (data.heroSentenceOption && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
+        document.addEventListener('scroll', function() {
+            const readMores = [...document.getElementsByClassName('btn-read-more ng-scope')].filter(item => item.firstElementChild && item.firstElementChild.innerText === 'Read more...')
+            readMores.forEach(item => item.firstElementChild.click())
+        })
+    }
+})
+
 function func() {
-    let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
-    links.map(link => link.href = '')
+    if (listenerOptions[0]) {
+        let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
+        links.map(link => link.href = '')
+    }
     greyOutAutomatedBroadcast()
 }
 
@@ -31,7 +43,7 @@ function greyOutAutomatedBroadcast() {
         item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
 
     items.forEach(item => {
-        if (listenerOptions[0] && item.firstChild.innerText.startsWith('Item ID: R')){
+        if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')){
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
         }else if (listenerOptions[1] && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
@@ -66,15 +78,19 @@ document.addEventListener('mousedown', function(e) {
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else document.title = e.target.outerText.trimEnd()
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
+        document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
     } else if (e.target.nodeName === 'A' && e.target.outerText === ' Coverage') {
+        document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
     } else if (e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
+        document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
+        document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
     } 
 })
@@ -111,7 +127,8 @@ chrome.runtime.onMessage.addListener(
             sendResponse({copy: window.getSelection().toString()})
         } else if (request.action === 'highlight') {
             highlightBroadcastItems()
-        } else if (request.action === 'checkingWords') {
+        } else if (request.action === 'checkingWords' && !checkingHasRun) {
+            checkingHasRun = true
             checkingHighlights()
         } else if (request.action === 'copyIDs') {
             let IDs = getAllIDs()
@@ -243,7 +260,6 @@ function getLastThreeDates() {
 
 
 function highlightHeadlines(headline, headlinesChecked, headlineStyle) {
-    console.log(headline)
     // if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
     let editedHeadline = headline
     if (headline.toUpperCase() === headline) {
@@ -321,12 +337,17 @@ async function checkingHighlights() {
                         if (skipDecapping.indexOf(submatch) > -1 || submatch === 'I' || submatch === 'MPs') return submatch
                         return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' // possible all caps
                     })
-                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch) {
+                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch, _, offset) {
                         if (submatch === 'amp') return submatch
                         // Checks the lower case & title case words
-                        if (skipDecapping.indexOf(submatch.toUpperCase()) > -1) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
-                        else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase()) && properNouns.indexOf(toSentenceCase(submatch)) > -1 ) {
+
+                        if (skipDecapping.indexOf(submatch.toUpperCase()) > -1  && offset < 30 ) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
+
+                        else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase()) 
+                        && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30 ) {
+                            console.log(offset)
                             return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible proper noun
+
                         } else if (submatch.toLowerCase() === 'scomo' && submatch !== 'ScoMo') {
                             return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible ScoMo miscapping
                         }
@@ -334,7 +355,7 @@ async function checkingHighlights() {
                     })
                     .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function(submatch) {
                     // Checks the first word of the match
-                        if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1) return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' //Possible all caps
+                        if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1 || submatch === submatch.toLowerCase()) return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' //Possible all caps
                         else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>' // Possible subheadings
                         return submatch
                     })

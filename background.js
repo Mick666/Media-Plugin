@@ -155,6 +155,7 @@ function checkingWords() {
     })
 }
 function decapWord(word, i, nextWord, properNouns, skipDecapping) {
+    if (!word || word === "") return;
     const splitWord = word.split('\'')
     if (isCapitalised(word) && skipDecapping.indexOf(word) === -1) {
         if (properNouns.indexOf(toSentenceCase(word)) > -1 || i === 0) {
