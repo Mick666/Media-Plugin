@@ -5,32 +5,34 @@ const commandObj = {'static-text-1':0, 'static-text-2':1, 'static-text-3':2, 'st
 chrome.commands.onCommand.addListener(function (command) {
     console.log(command)
     if (command === '1_paste') {
-        chrome.storage.local.get({decap: true}, function(result) {
+        chrome.storage.local.get({ decap: true }, function(result) {
             getHighlightedText(command, result.decap)
         })
     } else if (command === '2_abc') {
-        chrome.storage.local.get({decap: true}, function(result) {
+        chrome.storage.local.get({ decap: true }, function(result) {
             getHighlightedText(command, result.decap)
         })
-    } else if (command === 'highlightBroadcast') {
+    } else if (command === '4_highlightBroadcast') {
         highlightBroadcast()
-    } else if (command === 'highlightPreviewWords') {
+    } else if (command === '5_highlightPreviewWords') {
         checkingWords()
-    } else if (command === 'copyIDs') {
+    } else if (command === 'd_copyIDs') {
         getAllIDs()
-    } else if (command === 'addLink') {
+    } else if (command === 'l_addLink') {
         addLink()
-    }  else if (command === 'openLinks') {
+    }  else if (command === 'l_openLinks') {
         openLinks()
-    }  else if (command === 'saveID') {
+    }  else if (command === 'c1_saveID') {
         saveID()
-    } else if (command === 'copyID') {
+    } else if (command === 'c_copyID') {
         copyID()
-    }  else if (command === 'deleteIDs') {
+    }  else if (command === 'c_deleteIDs') {
         deleteIDs()
+    } else if (command === '3_changeCase') {
+        changeCase()
     } else {
         copy('', command)
-    } 
+    }
 })
 
 let savedLinks = []
@@ -143,19 +145,25 @@ function getAllIDs() {
     })
 }
 
+function changeCase() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'changeCase' })
+    })
+}
+
 function highlightBroadcast() {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {action: 'highlight'})
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'highlight' })
     })
 }
 
 function checkingWords() {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {action: 'checkingWords'})
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'checkingWords' })
     })
 }
 function decapWord(word, i, nextWord, properNouns, skipDecapping) {
-    if (!word || word === "") return;
+    if (!word || word === '') return
     const splitWord = word.split('\'')
     if (isCapitalised(word) && skipDecapping.indexOf(word) === -1) {
         if (properNouns.indexOf(toSentenceCase(word)) > -1 || i === 0) {

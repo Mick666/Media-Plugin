@@ -161,26 +161,28 @@ function createOption(hotkey, description, name) {
     itemGrid[2].appendChild(desc)
 }
 chrome.commands.getAll(function(commands) {
-    commands.map((command)=> {
+    commands.map((command) => {
         if (command.name === '1_paste') {
             createOption(command.shortcut, 'Removes linebreaks from copied text', 'Linebreak copy')
         } else if (command.name === '2_abc') {
             createOption(command.shortcut, 'Ignores ABC\'s Key Points when copying text', 'ABC copy')
-        } else if (command.name ==='highlightBroadcast') {
+        } else if (command.name === '3_changeCase') {
+            createOption(command.shortcut, 'Changes the case of highlighted text', 'Case change')
+        } else if (command.name ==='4_highlightBroadcast') {
             createOption(command.shortcut, 'Highlights broadcast items which need a word recapitalised', 'Broadcast higlighter')
-        } else if (command.name ==='highlightPreviewWords') {
+        } else if (command.name ==='5_highlightPreviewWords') {
             createOption(command.shortcut, 'Highlight possible mistakes in checking', 'Checking highlighter')
-        } else if (command.name ==='copyIDs') {
+        } else if (command.name ==='d_copyIDs') {
             createOption(command.shortcut, 'Copy all visible IDs', 'All visible IDs copier')
-        } else if (command.name ==='addLink') {
+        } else if (command.name ==='l_addLink') {
             createOption(command.shortcut, 'Saves a link for later use', 'Link saver')
-        } else if (command.name ==='openLinks') {
+        } else if (command.name ==='l_openLinks') {
             createOption(command.shortcut, 'Opens all the saved links & copies them to the clipboard', 'Link opener')
-        } else if (command.name ==='saveID') {
+        } else if (command.name ==='c1_saveID') {
             createOption(command.shortcut, 'Saves a highlighted ID for later use', 'Individual ID saver')
-        } else if (command.name ==='copyID') {
+        } else if (command.name ==='c_copyID') {
             createOption(command.shortcut, 'Copies all saved IDs to your clipboard', 'Individual ID copier')
-        } else if (command.name ==='deleteIDs') {
+        } else if (command.name ==='c_deleteIDs') {
             createOption(command.shortcut, 'Deletes all saved IDs', 'ID deleter')
         }
         else if (command.name === '_execute_browser_action') {

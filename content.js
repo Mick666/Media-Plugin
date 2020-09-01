@@ -1,11 +1,11 @@
-const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
     'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
-const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
+const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
-    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
-    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
-    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
-    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
+    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor',
+    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo',
+    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume',
+    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 const possibleSubheadings = ['exclusive', 'inside']
@@ -13,14 +13,14 @@ let seenIDs = []
 let listenerOptions = [true, true, true]
 let checkingHasRun = false
 
-chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
+chrome.storage.local.get({ listenerOptions: [true, true, true] }, function(data){
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings'  && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view' )  {
         document.addEventListener('scroll', func)
         listenerOptions = data.listenerOptions
     }
 })
 
-chrome.storage.local.get({heroSentenceOption: true}, function(data){
+chrome.storage.local.get({ heroSentenceOption: true }, function(data){
     if (data.heroSentenceOption && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
         document.addEventListener('scroll', function() {
             const readMores = [...document.getElementsByClassName('btn-read-more ng-scope')].filter(item => item.firstElementChild && item.firstElementChild.innerText === 'Read more...')
@@ -39,7 +39,7 @@ function func() {
 
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
-        .filter(item => !item.className.includes('edited') && 
+        .filter(item => !item.className.includes('edited') &&
         item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
 
     items.forEach(item => {
@@ -56,7 +56,7 @@ function greyOutAutomatedBroadcast() {
     })
 }
 
-chrome.storage.local.get({readmoreScroll: true}, function(data){
+chrome.storage.local.get({ readmoreScroll: true }, function(data){
     if (data.readmoreScroll){
         document.addEventListener('mousedown', function(e) {
             if (e.target.outerText === ' Read More') {
@@ -71,9 +71,9 @@ chrome.storage.local.get({readmoreScroll: true}, function(data){
 
 document.addEventListener('mousedown', function(e) {
     if (e.button !== 0 || e.ctrlKey || !e.target) return
-    if (((e.target.className && e.target.className === 'coverage-anchor') || 
+    if (((e.target.className && e.target.className === 'coverage-anchor') ||
         (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
-        (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel')) 
+        (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
         && / Brief| Folder/.test(e.target.parentElement.outerText)) {
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else document.title = e.target.outerText.trimEnd()
@@ -92,7 +92,7 @@ document.addEventListener('mousedown', function(e) {
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
-    } 
+    }
 })
 
 window.onload = function() {
@@ -120,11 +120,11 @@ window.onload = function() {
 //         e.preventDefault()
 //     }
 // }, false)
-    
+
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action === 'getHighlightedText') {
-            sendResponse({copy: window.getSelection().toString()})
+            sendResponse({ copy: window.getSelection().toString() })
         } else if (request.action === 'highlight') {
             highlightBroadcastItems()
         } else if (request.action === 'checkingWords' && !checkingHasRun) {
@@ -132,15 +132,17 @@ chrome.runtime.onMessage.addListener(
             checkingHighlights()
         } else if (request.action === 'copyIDs') {
             let IDs = getAllIDs()
-            sendResponse({copy: IDs})
+            sendResponse({ copy: IDs })
+        } else if (request.action === 'changeCase') {
+            changeCase()
         }
-})
-        
+    })
+
 function highlightBroadcastItems() {
-    const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow');
+    const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')
     for (let i = 0; i < headlines.length; i++) {
-        if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText) 
-            && (headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-volume-up' || 
+        if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText)
+            && (headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-volume-up' ||
             headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
             headlines[i].firstChild.innerHTML = headlines[i].firstChild.innerHTML
                 .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function(match) {
@@ -154,8 +156,8 @@ function highlightBroadcastItems() {
 const datesForChecks = getLastThreeDates()
 const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydney Morning Herald', 'Sun Herald',
     'Daily Telegraph', 'Sunday Telegraph', 'Age', 'Sunday Age', 'Herald Sun', 'Sunday Herald Sun', 'Canberra Times',
-    'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide', 
-    'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian', 
+    'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
+    'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
     'The Australian', 'AFR Weekend ']
 
 function cleanUpAuthorLines(byline, isIndustry) {
@@ -181,11 +183,11 @@ function cleanUpAuthorLines(byline, isIndustry) {
                 }
             }
         }
-    
+
         if (byline[2].startsWith('Page ')) return byline
         let splitByline = byline[2].split(' ')
         if (byline[2].toUpperCase() === byline[2] && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[2])) {
-            byline[2] = '<span style=\'background-color:#FDFF47;\'>' + byline[2] + '</span>' 
+            byline[2] = '<span style=\'background-color:#FDFF47;\'>' + byline[2] + '</span>'
         } else if (splitByline.length === 1 && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[2])) {
             byline[2] = '<span style=\'background-color:#00FF00;\'>' + byline[2] + '</span>'//Possible proper noun;
         } else if (splitByline.length > 2 && byline[2].search(/and/) === -1) {
@@ -218,7 +220,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
                 }
             }
         }
-    
+
         if (byline[3].startsWith('Page ')) return byline
         let splitByline = byline[3].split(' ')
         if (byline[3].toUpperCase() === byline[3] && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[3])) {
@@ -237,7 +239,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
     }
 }
 
-   
+
 function checkContentDates(date, outlet, mediatype) {
     if (!date || date.length === 0) return date
     if (!/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(date)) return date
@@ -274,14 +276,14 @@ function highlightHeadlines(headline, headlinesChecked, headlineStyle) {
 
 function getCheckingCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({checkingCaps: defaultCheckCaps}, function(data){
+        chrome.storage.local.get({ checkingCaps: defaultCheckCaps }, function(data){
             options(data.checkingCaps)
         })
     })
 }
 function getCheckingPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({checkingPropers: defaultCheckProperNouns}, function(data){
+        chrome.storage.local.get({ checkingPropers: defaultCheckProperNouns }, function(data){
             options(data.checkingPropers)
         })
     })
@@ -289,12 +291,13 @@ function getCheckingPropers() {
 
 
 async function checkingHighlights() {
+    if (!window.location.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) return
     let skipDecapping = await getCheckingCaps()
     let properNouns = await getCheckingPropers()
     let links = document.querySelectorAll('a')
     let items = [...document.getElementsByClassName('mj-column-per-100 outlook-group-fix')]
-        .filter(item => item.children[0].tagName === 'TABLE' 
-        && item.children[0].children[0].tagName === 'TBODY' 
+        .filter(item => item.children[0].tagName === 'TABLE'
+        && item.children[0].children[0].tagName === 'TBODY'
         && (item.children[0].children[0].children.length === 5 || item.children[0].children[0].children.length === 4))
     let headlinesChecked = []
     let isIndustry = false
@@ -311,7 +314,7 @@ async function checkingHighlights() {
 
     if (items[0].outerText.search('For any questions or feedback on this report contact the Department’s media team at mediateam@industry.gov.au') > -1) {
         isIndustry = true
-    } 
+    }
 
     for (i; i < items.length; i++) {
         let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
@@ -343,7 +346,7 @@ async function checkingHighlights() {
 
                         if (skipDecapping.indexOf(submatch.toUpperCase()) > -1  && offset < 30 ) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
 
-                        else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase()) 
+                        else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase())
                         && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30 ) {
                             console.log(offset)
                             return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible proper noun
@@ -374,11 +377,66 @@ async function checkingHighlights() {
 }
 
 const toSentenceCase = (word) => word.split('').map((letter, index) => {
-    if (index === 0) {
-        return letter.toUpperCase()
-    } else return letter.toLowerCase()
+    if (index === 0) return letter.toUpperCase()
+    else if ((word[0] === '"' || word[0] === '\'') && index === 1) return letter.toUpperCase()
+    else return letter.toLowerCase()
 }).join('')
 
 function getAllIDs() {
     return [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')].map(item => item.firstChild.innerText.replace('Item ID: ', '')).join('\n')
 }
+
+function changeCase() {
+    if (window.getSelection().toString().length === 0 || !window.getSelection().toString()) return
+
+    var textBox = document.activeElement
+    var text = changeSelectedText(window.getSelection().toString())
+
+    if (textBox.selectionStart !== undefined) {
+        var startPos = textBox.selectionStart
+        var endPos = textBox.selectionEnd
+        textBox.value = textBox.value.slice(0, startPos) + text + textBox.value.slice(endPos)
+        textBox.setSelectionRange(startPos, endPos)
+    }
+
+    var textfieldUpdated = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+    })
+
+    textBox.dispatchEvent(textfieldUpdated)
+}
+
+function changeSelectedText(text) {
+    const currentCapitalisation = getCapitalisation(text)
+    switch (currentCapitalisation) {
+    case 'AllCaps':
+        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+    case 'Title Case':
+        return text.split(' ').map((word, index) => {
+            if (index === 0) return toSentenceCase(word)
+            else return word.toLowerCase()
+        }).join(' ')
+    case 'Sentence case':
+        return text.toLowerCase()
+    case 'lower case':
+        return text.toUpperCase()
+    default:
+        return text
+    }
+
+}
+
+function getCapitalisation(text) {
+    if (text.toUpperCase() === text) return 'AllCaps'
+    else if (text.split(' ').length > 1 && text.split(' ').map(word => toSentenceCase(word)).join(' ') === text) return 'Title Case'
+    else if (text.split(' ').map((word, index) => {
+        if (index === 0) return toSentenceCase(word)
+        else return word.toLowerCase()
+    }).join(' ') === text) return 'Sentence case'
+    else if (text.toLowerCase() === text) return 'lower case'
+    return 'lower case'
+}
+
+
+

@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -64,36 +64,39 @@
         "t_static-text-10": {
             "description": "Static text #10"
         },
-        "highlightBroadcast": {
-            "suggested_key": {
-                "default": "Alt+Q"
-            },
+        "4_highlightBroadcast": {
             "description": "Highlight broadcast items which need recapping"
         },
-        "highlightPreviewWords": {
+        "5_highlightPreviewWords": {
             "suggested_key": {
                 "default": "Alt+W",
                 "mac": "Command+Shift+Y"
             },
             "description": "Highlight possible mistakes in checking"
         },
-        "copyIDs": {
+        "d_copyIDs": {
             "description": "Copy all visible items to the clipboard"
         },
-        "openLinks": {
+        "l_openLinks": {
             "description": "Open all saved links & copy them to the clipboard"
         },
-        "addLink": {
+        "l_addLink": {
             "description": "Saves a link from your clipboard for later use"
         },
-        "saveID": {
+        "c1_saveID": {
             "description": "Saves a highlighted Item ID"
         },
-        "copyID": {
+        "c_copyID": {
             "description": "Copies all item IDs to your clipboard"
         },
-        "deleteIDs": {
+        "c_deleteIDs": {
             "description": "Removes all saved IDs"
+        },
+        "3_changeCase": {
+            "suggested_key": {
+                "default": "Alt+Q"
+            },
+            "description": "Changes the case of highlighted text"
         }
     }
 }
