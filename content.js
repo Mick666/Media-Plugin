@@ -261,7 +261,7 @@ function getLastThreeDates() {
 }
 
 
-function highlightHeadlines(headline, headlinesChecked, headlineStyle) {
+function highlightHeadlines(headline, headlinesChecked) {
     // if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
     let editedHeadline = headline
     if (headline.toUpperCase() === headline) {
@@ -295,10 +295,6 @@ async function checkingHighlights() {
     let skipDecapping = await getCheckingCaps()
     let properNouns = await getCheckingPropers()
     let links = document.querySelectorAll('a')
-    let items = [...document.getElementsByClassName('mj-column-per-100 outlook-group-fix')]
-        .filter(item => item.children[0].tagName === 'TABLE'
-        && item.children[0].children[0].tagName === 'TBODY'
-        && (item.children[0].children[0].children.length === 5 || item.children[0].children[0].children.length === 4))
     let headlinesChecked = []
     let isIndustry = false
 
@@ -309,32 +305,36 @@ async function checkingHighlights() {
             links[i].style.backgroundColor = '#00FF00'
         }
     }
-    let i = 0
-    if (items[0].outerText.match(/LINKS|EXECUTIVE SUMMARY/)) i++
 
-    if (items[0].outerText.search('For any questions or feedback on this report contact the Department’s media team at mediateam@industry.gov.au') > -1) {
+    if (document.body.outerText.search('For any questions or feedback on this report contact the Department’s media team at mediateam@industry.gov.au') > -1) {
         isIndustry = true
     }
 
-    for (i; i < items.length; i++) {
-        let headline = items[i].children[0].children[0].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
-        let authorLine = items[i].children[0].children[0].children[1].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
-        let headlineStyle = items[i].children[0].children[0].children[0].children[0].children[0].style.cssText
-        if (!/[^ \n]/.test(items[i].children[0].children[0].children[1].children[0].children[0].innerHTML)) {
-            items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = cleanUpAuthorLines(headline.split(', '), isIndustry).join(', ')
-        } else {
-            items[i].children[0].children[0].children[0].children[0].children[0].innerHTML = highlightHeadlines(headline, headlinesChecked, headlineStyle)
-            items[i].children[0].children[0].children[1].children[0].children[0].innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
-        }
+    let authorLines = document.getElementsByClassName('item-metadata-hook')
+    let headlines = document.getElementsByClassName('item-headline-hook')
+    let itemSummaries = document.getElementsByClassName('item-content-hook')
 
-        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML =
-        items[i].children[0].children[0].children[2].children[0].children[0].children[0].innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
-            .replace(/.*?[\.!\?](?:\s|$)/, function(match) {
+    for (let i = 0; i < itemSummaries.length; i++) {
+
+        let authorLine = authorLines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
+
+        if (authorLine[0].length === 0) continue
+
+        authorLines[i].firstElementChild.innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
+
+        let headline = headlines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
+
+        headlines[i].firstElementChild.innerHTML = highlightHeadlines(headline, headlinesChecked)
+
+        let itemContent = itemSummaries[i].firstElementChild.firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
+
+        itemSummaries[i].firstElementChild.innerHTML = itemContent
+            .replace(/.*?[.!?](?:\s|$)/, function(match) {
                 return match.replace('writes', function(submatch) {
                     return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>'// possible subheading
                 })
             })
-            .replace(/^.*?[\.!\?](?:\s|$)/g, function(match) {
+            .replace(/^.*?[.!?](?:\s|$)/g, function(match) {
                 return match
                     .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function(submatch) {
                         if (skipDecapping.indexOf(submatch) > -1 || submatch === 'I' || submatch === 'MPs') return submatch
@@ -347,7 +347,7 @@ async function checkingHighlights() {
                         if (skipDecapping.indexOf(submatch.toUpperCase()) > -1  && offset < 30 ) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
 
                         else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase())
-                        && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30 ) {
+                    && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30 ) {
                             console.log(offset)
                             return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible proper noun
 
@@ -429,7 +429,7 @@ function changeSelectedText(text) {
 
 function getCapitalisation(text) {
     if (text.toUpperCase() === text) return 'AllCaps'
-    else if (text.split(' ').length > 1 && text.split(' ').map(word => toSentenceCase(word)).join(' ') === text) return 'Title Case'
+    else if (text.split(' ').filter(x => x.length > 0).length > 1 && text.split(' ').map(word => toSentenceCase(word)).join(' ') === text) return 'Title Case'
     else if (text.split(' ').map((word, index) => {
         if (index === 0) return toSentenceCase(word)
         else return word.toLowerCase()

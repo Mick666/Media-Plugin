@@ -1,55 +1,55 @@
-const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
     'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
-const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
+const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
-    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', "O'Connor",
-    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
-    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
-    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
+    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor',
+    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo',
+    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume',
+    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
-const defaultCopyCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 
+const defaultCopyCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
     'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
-const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania', 
-    'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr', 
-    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor', 
-    'Michaelia', 'Cash', 'Parliament', 'House', 'Prime', 'Minister', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo', 
-    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume', 
-    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex', 
+const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
+    'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
+    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor',
+    'Michaelia', 'Cash', 'Parliament', 'House', 'Prime', 'Minister', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo',
+    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume',
+    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 
 function getEventListenerOptions() {
     return new Promise(options => {
-        chrome.storage.local.get({listenerOptions: [true, true, true]}, function(data){
+        chrome.storage.local.get({ listenerOptions: [true, true, true] }, function(data){
             options(data.listenerOptions)
         })
     })
 }
 function getCheckingCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({checkingCaps: defaultCheckCaps}, function(data){
+        chrome.storage.local.get({ checkingCaps: defaultCheckCaps }, function(data){
             options(data.checkingCaps)
         })
     })
 }
 function getCheckingPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({checkingPropers: defaultCheckProperNouns}, function(data){
+        chrome.storage.local.get({ checkingPropers: defaultCheckProperNouns }, function(data){
             options(data.checkingPropers)
         })
     })
 }
 function getCopyCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({copyCaps: defaultCopyCaps}, function(data){
+        chrome.storage.local.get({ copyCaps: defaultCopyCaps }, function(data){
             options(data.copyCaps)
         })
     })
 }
 function getCopyPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({copyPropers: defaultProperNouns}, function(data){
+        chrome.storage.local.get({ copyPropers: defaultProperNouns }, function(data){
             options(data.copyPropers)
         })
     })
@@ -79,67 +79,67 @@ window.addEventListener('load', async () => {
         optionCheckboxes[i].children[0].checked = listenerOptions[i]
     }
 
-    chrome.storage.local.get({heroSentenceOption: true}, function(data){
+    chrome.storage.local.get({ heroSentenceOption: true }, function(data){
         document.getElementById('heroSentence').children[0].checked = data.heroSentenceOption
     })
 
-    chrome.storage.local.get({readmoreScroll: true}, function(data){
+    chrome.storage.local.get({ readmoreScroll: true }, function(data){
         document.getElementById('readmore').children[0].checked = data.readmoreScroll
     })
 
-    chrome.storage.local.get({decap: true}, function(data){
+    chrome.storage.local.get({ decap: true }, function(data){
         document.getElementById('decap').children[0].checked = data.decap
     })
     loadTextFieldData()
 })
 
 document.getElementById('hotkey').onclick = event => {
-    chrome.tabs.create({url: 'chrome://extensions/configureCommands'})
+    chrome.tabs.create({ url: 'chrome://extensions/configureCommands' })
     event.preventDefault()
 }
 
 document.getElementById('heroSentence').addEventListener('change', async function(e) {
-    chrome.storage.local.set({heroSentenceOption: e.target.checked}, function() {
+    chrome.storage.local.set({ heroSentenceOption: e.target.checked }, function() {
     })
 })
 
 document.getElementById('switch').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[0] = e.target.checked
-    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
     })
 })
 
 document.getElementById('automated').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[1] = e.target.checked
-    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
     })
 })
 
 document.getElementById('repeated').addEventListener('change', async function(e) {
     let eventListenerOptions = await getEventListenerOptions()
     eventListenerOptions[2] = e.target.checked
-    chrome.storage.local.set({listenerOptions: eventListenerOptions}, function() {
+    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
     })
 })
 
 document.getElementById('readmore').addEventListener('change', function(e) {
     if (e.target.checked) {
-        chrome.storage.local.set({readmoreScroll: true}, function() {
+        chrome.storage.local.set({ readmoreScroll: true }, function() {
         })
     } else {
-        chrome.storage.local.set({readmoreScroll: false}, function() {
+        chrome.storage.local.set({ readmoreScroll: false }, function() {
         })
     }
 })
 
 document.getElementById('decap').addEventListener('change', function(e) {
     if (e.target.checked) {
-        chrome.storage.local.set({decap: true}, function() {
+        chrome.storage.local.set({ decap: true }, function() {
         })
     } else {
-        chrome.storage.local.set({decap: false}, function() {
+        chrome.storage.local.set({ decap: false }, function() {
         })
     }
 })
@@ -151,7 +151,7 @@ const itemGrid = document.getElementsByClassName('itemGrid')
 function createOption(hotkey, description, name) {
     let shortcut = document.createElement('p')
     shortcut.innerHTML = hotkey
-    if (hotkey == '') shortcut.innerHTML = 'Not bound'
+    if (hotkey === '') shortcut.innerHTML = 'Not bound'
     let desc = document.createElement('p')
     desc.innerHTML = description
     let comm = document.createElement('p')
@@ -183,9 +183,7 @@ chrome.commands.getAll(function(commands) {
         } else if (command.name ==='c_copyID') {
             createOption(command.shortcut, 'Copies all saved IDs to your clipboard', 'Individual ID copier')
         } else if (command.name ==='c_deleteIDs') {
-            createOption(command.shortcut, 'Deletes all saved IDs', 'ID deleter')
-        }
-        else if (command.name === '_execute_browser_action') {
+            createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
         } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
@@ -194,7 +192,7 @@ chrome.commands.getAll(function(commands) {
             desc.innerHTML = command.description
             itemGrid[4].appendChild(shortcut)
             itemGrid[3].appendChild(desc)
-        } else {
+        } else if (command.name !== '_execute_browser_action'){
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
             if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'
@@ -214,7 +212,7 @@ chrome.commands.getAll(function(commands) {
 // The Minister for Trade, Tourism and Investment is also mentioned in 'X' in the Minister for Foreign Affairs section
 // The Department of Foreign Affairs and Trade is also mentioned in 'X' in the Minister for Foreign Affairs section
 
-chrome.storage.local.get({staticText: ['Similar coverage reported by: ', 'Also in other publications']}, function(data){
+chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function(data){
     for (let i = 0; i < 10; i++) {
         let setting = document.createElement('textarea')
         setting.value = data.staticText[i] || ''
@@ -237,15 +235,15 @@ function saveOptions(e) {
     let decapPropersValues = document.getElementById('decapPropers').value.replace(/, {1,}/g, ',').split(',')
     let checkingCopyCapsValues = document.getElementById('checkingCaps').value.replace(/, {1,}/g, ',').split(',')
     let checkingCopyPropersValues = document.getElementById('checkingPropers').value.replace(/, {1,}/g, ',').split(',')
-    chrome.storage.local.set({staticText: options}, function() {
+    chrome.storage.local.set({ staticText: options }, function() {
     })
-    chrome.storage.local.set({checkingCaps: checkingCopyCapsValues}, function() {
+    chrome.storage.local.set({ checkingCaps: checkingCopyCapsValues }, function() {
     })
-    chrome.storage.local.set({checkingPropers: checkingCopyPropersValues}, function() {
+    chrome.storage.local.set({ checkingPropers: checkingCopyPropersValues }, function() {
     })
-    chrome.storage.local.set({copyCaps: decapCapsValues}, function() {
+    chrome.storage.local.set({ copyCaps: decapCapsValues }, function() {
     })
-    chrome.storage.local.set({copyPropers: decapPropersValues}, function() {
+    chrome.storage.local.set({ copyPropers: decapPropersValues }, function() {
     })
 }
 
