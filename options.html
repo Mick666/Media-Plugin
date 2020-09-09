@@ -15,7 +15,6 @@
             <button class="tablinks" id='optionsTab' data-key='options'>Options</button>
             <button class="tablinks" id='staticTextTab' data-key='statictext'>Static Text</button>
             <button class="tablinks" id='smartDecapTab' data-key='smartdecap'>Smart decapping words</button>
-            <button class="tablinks" id='checkingTab' data-key='smartcheck'>Checking tool</button>
           </div>
         <div id='options' class='tabcontent active'>
             <div class="switchContainer">
@@ -55,8 +54,11 @@
                 </label>
             </div>
             <div id="parentGrid">
-                <div class="subGrid">
-                    <h4>Command</h6>
+                <h4>Command</h6>
+                <h4>Hotkey</h6>
+                <h4>Action</h6>
+                <!-- <div class="subGrid">
+                    <h4 class="itemGrid">Command</h6>
                     <div class="itemGrid"> 
                     </div>
                 </div>
@@ -69,11 +71,11 @@
                     <h4>Action</h6>
                     <div class="itemGrid"> 
                     </div>        
-                </div>
+                </div> -->
             </div>
         </div>
         <div id='statictext' class='tabcontent'>
-            <div id="parentGrid">
+            <div id="staticTextParentGrid">
                 <div class="subGrid">
                     <h4>Static Text</h6>
                     <div class="itemGrid"> 
@@ -102,21 +104,6 @@
                 <div class="subGrid">
                     <h4>Proper nouns</h6>
                     <textarea class="decap wordlist" id='decapPropers'>       
-                    </textarea>
-                </div>
-            </div>
-        </div>
-        <div id='smartcheck' class='tabcontent'>
-            Each word needs to be separated by a comma. The words used in these fields will be used by the checking tool when looking for incorrectly capitalised words.
-            <div id="decapGrid">
-                <div class="subGrid">
-                    <h4>Words to keep capitalised</h6>
-                    <textarea class="checking wordlist" id='checkingCaps'> 
-                    </textarea>
-                </div>
-                <div class="subGrid">
-                    <h4>Proper nouns</h6>
-                    <textarea class="checking wordlist" id='checkingPropers'>       
                     </textarea>
                 </div>
             </div>

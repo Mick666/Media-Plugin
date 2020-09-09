@@ -1,13 +1,3 @@
-const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
-    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
-const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
-    'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
-    'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor',
-    'Michaelia', 'Greg', 'Hunt', 'Marise', 'Payne', 'Ken', 'Wyatt', 'McCormack', 'ScoMo',
-    'Paul', 'Fletcher', 'Coulton', 'Gee', 'Buchholz', 'Hogan', 'Nola', 'Marino', 'Josh', 'Frydenberg', 'Sukkar', 'Hastie', 'Dave', 'Sharma', 'Jane', 'Hume',
-    'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
-    'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
-    'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 const defaultCopyCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
     'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
 const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
@@ -26,20 +16,7 @@ function getEventListenerOptions() {
         })
     })
 }
-function getCheckingCaps() {
-    return new Promise(options => {
-        chrome.storage.local.get({ checkingCaps: defaultCheckCaps }, function(data){
-            options(data.checkingCaps)
-        })
-    })
-}
-function getCheckingPropers() {
-    return new Promise(options => {
-        chrome.storage.local.get({ checkingPropers: defaultCheckProperNouns }, function(data){
-            options(data.checkingPropers)
-        })
-    })
-}
+
 function getCopyCaps() {
     return new Promise(options => {
         chrome.storage.local.get({ copyCaps: defaultCopyCaps }, function(data){
@@ -56,14 +33,10 @@ function getCopyPropers() {
 }
 
 async function loadTextFieldData() {
-    let checkingCaps = await getCheckingCaps()
-    let checkingPropers = await getCheckingPropers()
     let checkingCopyCaps = await getCopyCaps()
     let checkingCopyPropers = await getCopyPropers()
-    document.getElementById('decapCaps').value = checkingCaps.join(', ').replace(/ {2,}/g, ' ')
-    document.getElementById('decapPropers').value = checkingPropers.join(', ').replace(/ {2,}/g, ' ')
-    document.getElementById('checkingCaps').value = checkingCopyCaps.join(', ').replace(/ {2,}/g, ' ')
-    document.getElementById('checkingPropers').value = checkingCopyPropers.join(', ').replace(/ {2,}/g, ' ')
+    document.getElementById('decapCaps').value = checkingCopyCaps.join(', ').replace(/ {2,}/g, ' ')
+    document.getElementById('decapPropers').value = checkingCopyPropers.join(', ').replace(/ {2,}/g, ' ')
     let wordList = document.getElementsByClassName('wordlist')
     for (let i = 0; i < wordList.length; i++) {
         wordList[i].rows = 25
@@ -144,6 +117,7 @@ document.getElementById('decap').addEventListener('change', function(e) {
     }
 })
 const itemGrid = document.getElementsByClassName('itemGrid')
+const hotkeyGrid = document.getElementById('parentGrid')
 
 // chrome.storage.local.get(['staticText'], function(result) {
 //     console.log(result.staticText)
@@ -156,9 +130,9 @@ function createOption(hotkey, description, name) {
     desc.innerHTML = description
     let comm = document.createElement('p')
     comm.innerHTML = name
-    itemGrid[0].appendChild(comm)
-    itemGrid[1].appendChild(shortcut)
-    itemGrid[2].appendChild(desc)
+    hotkeyGrid.appendChild(comm)
+    hotkeyGrid.appendChild(shortcut)
+    hotkeyGrid.appendChild(desc)
 }
 chrome.commands.getAll(function(commands) {
     commands.map((command) => {
@@ -172,8 +146,6 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Highlights broadcast items which need a word recapitalised', 'Broadcast higlighter')
         } else if (command.name ==='5_highlightPreviewWords') {
             createOption(command.shortcut, 'Highlight possible mistakes in checking', 'Checking highlighter')
-        } else if (command.name ==='d_copyIDs') {
-            createOption(command.shortcut, 'Copy all visible IDs', 'All visible IDs copier')
         } else if (command.name ==='l_addLink') {
             createOption(command.shortcut, 'Saves a link for later use', 'Link saver')
         } else if (command.name ==='l_openLinks') {
@@ -184,14 +156,18 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Copies all saved IDs to your clipboard', 'Individual ID copier')
         } else if (command.name ==='c_deleteIDs') {
             createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
+        } else if (command.name ==='c2_pasteEntireField') {
+            createOption(command.shortcut, 'Sets the text field to your last copied value', 'Text field replacer')
+        } else if (command.name ==='c2_pasteWithContext') {
+            createOption(command.shortcut, 'Sets the text field to your last copied value, but keeps the text after [...]', 'Text field replacer with context')
         } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
             if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'
             let desc = document.createElement('p')
             desc.innerHTML = command.description
-            itemGrid[4].appendChild(shortcut)
-            itemGrid[3].appendChild(desc)
+            itemGrid[1].appendChild(shortcut)
+            itemGrid[0].appendChild(desc)
         } else if (command.name !== '_execute_browser_action'){
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
@@ -217,8 +193,7 @@ chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also 
         let setting = document.createElement('textarea')
         setting.value = data.staticText[i] || ''
         setting.className = 'staticText'
-        // console.log(setting)
-        itemGrid[5].appendChild(setting)
+        itemGrid[2].appendChild(setting)
     }
 })
 document.getElementById('save').addEventListener('click', saveOptions)
@@ -233,13 +208,7 @@ function saveOptions(e) {
     }
     let decapCapsValues = document.getElementById('decapCaps').value.replace(/, {1,}/g, ',').split(',')
     let decapPropersValues = document.getElementById('decapPropers').value.replace(/, {1,}/g, ',').split(',')
-    let checkingCopyCapsValues = document.getElementById('checkingCaps').value.replace(/, {1,}/g, ',').split(',')
-    let checkingCopyPropersValues = document.getElementById('checkingPropers').value.replace(/, {1,}/g, ',').split(',')
     chrome.storage.local.set({ staticText: options }, function() {
-    })
-    chrome.storage.local.set({ checkingCaps: checkingCopyCapsValues }, function() {
-    })
-    chrome.storage.local.set({ checkingPropers: checkingCopyPropersValues }, function() {
     })
     chrome.storage.local.set({ copyCaps: decapCapsValues }, function() {
     })

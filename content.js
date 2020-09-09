@@ -12,6 +12,7 @@ const possibleSubheadings = ['exclusive', 'inside']
 let seenIDs = []
 let listenerOptions = [true, true, true]
 let checkingHasRun = false
+let lastPluginCopy = ''
 
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function(data){
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings'  && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view' )  {
@@ -107,20 +108,6 @@ window.onload = function() {
     }
 }
 
-// document.addEventListener('scroll', function() {
-//     let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
-//     links.map(link => link.href = '')
-//     greyOutAutomatedBroadcast()
-// })
-
-// document.addEventListener('keydown', function(e) {
-//     console.log('test')
-//     if (window.location.href.startsWith('https://app.mediaportal.com/dailybriefings') && e.keyCode == 83 && e.ctrlKey) {
-//         console.log('testing')
-//         e.preventDefault()
-//     }
-// }, false)
-
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action === 'getHighlightedText') {
@@ -135,6 +122,10 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ copy: IDs })
         } else if (request.action === 'changeCase') {
             changeCase()
+        } else if (request.action === 'setFieldValue') {
+            setFieldValue(lastPluginCopy, request.setting)
+        }  else if (request.action === 'lastCopiedValue') {
+            lastPluginCopy = request.data
         }
     })
 
@@ -276,15 +267,15 @@ function highlightHeadlines(headline, headlinesChecked) {
 
 function getCheckingCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({ checkingCaps: defaultCheckCaps }, function(data){
-            options(data.checkingCaps)
+        chrome.storage.local.get({ copyCaps: defaultCheckCaps }, function(data){
+            options(data.copyCaps)
         })
     })
 }
 function getCheckingPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({ checkingPropers: defaultCheckProperNouns }, function(data){
-            options(data.checkingPropers)
+        chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function(data){
+            options(data.copyPropers)
         })
     })
 }
@@ -398,6 +389,24 @@ function changeCase() {
         textBox.value = textBox.value.slice(0, startPos) + text + textBox.value.slice(endPos)
         textBox.setSelectionRange(startPos, endPos)
     }
+
+    var textfieldUpdated = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+    })
+
+    textBox.dispatchEvent(textfieldUpdated)
+}
+
+function setFieldValue (text, setting) {
+    let textBox = document.activeElement
+    if (setting === 'entireField') {
+        textBox.value = text
+    } else if (setting === 'keepContext') {
+        let textBoxData = textBox.value.split('[...]')
+        textBoxData[0] = text
+        textBox.value = textBoxData.join('[...]')
+    } else return
 
     var textfieldUpdated = new Event('input', {
         bubbles: true,

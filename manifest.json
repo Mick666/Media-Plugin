@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.2.1",
+    "version": "0.6.3",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -74,9 +74,6 @@
             },
             "description": "Highlight possible mistakes in checking"
         },
-        "d_copyIDs": {
-            "description": "Copy all visible items to the clipboard"
-        },
         "l_openLinks": {
             "description": "Open all saved links & copy them to the clipboard"
         },
@@ -97,6 +94,12 @@
                 "default": "Alt+Q"
             },
             "description": "Changes the case of highlighted text"
+        },
+        "c2_pasteEntireField": {
+            "description": "Text field replacer"
+        },
+        "c2_pasteWithContext": {
+            "description": "Text field replacer with context"
         }
     }
 }

@@ -1,40 +1,7 @@
 //  To set the clipboard's text, we need to use a background html page with a dummy field we can set the value of.
 //  To get the highlighted text though, we need to send a message to the content.js file, and get the text in the response.
 //  Some of these are to save typing, so we don't need to send the message to the content.js file.
-const commandObj = { 'static-text-1':0, 'static-text-2':1, 'static-text-3':2, 'static-text-4':3, 'static-text-5':4, 'static-text-6':5, 'static-text-7':6, 'static-text-8':7, 'static-text-9':8, 't_static-text-10':9 }
-chrome.commands.onCommand.addListener(function (command) {
-    console.log(command)
-    if (command === '1_paste') {
-        chrome.storage.local.get({ decap: true }, function(result) {
-            getHighlightedText(command, result.decap)
-        })
-    } else if (command === '2_abc') {
-        chrome.storage.local.get({ decap: true }, function(result) {
-            getHighlightedText(command, result.decap)
-        })
-    } else if (command === '4_highlightBroadcast') {
-        highlightBroadcast()
-    } else if (command === '5_highlightPreviewWords') {
-        checkingWords()
-    } else if (command === 'd_copyIDs') {
-        getAllIDs()
-    } else if (command === 'l_addLink') {
-        addLink()
-    }  else if (command === 'l_openLinks') {
-        openLinks()
-    }  else if (command === 'c1_saveID') {
-        saveID()
-    } else if (command === 'c_copyID') {
-        copyID()
-    }  else if (command === 'c_deleteIDs') {
-        deleteIDs()
-    } else if (command === '3_changeCase') {
-        changeCase()
-    } else {
-        copy('', command)
-    }
-})
-
+const commandObj = { 'static-text-1': 0, 'static-text-2': 1, 'static-text-3': 2, 'static-text-4': 3, 'static-text-5': 4, 'static-text-6': 5, 'static-text-7': 6, 'static-text-8': 7, 'static-text-9': 8, 't_static-text-10': 9 }
 let savedLinks = []
 let savedIDs = []
 
@@ -50,16 +17,54 @@ const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morr
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 
+chrome.commands.onCommand.addListener(function (command) {
+    console.log(command)
+    if (command === '1_paste') {
+        chrome.storage.local.get({ decap: true }, function (result) {
+            getHighlightedText(command, result.decap)
+        })
+    } else if (command === '2_abc') {
+        chrome.storage.local.get({ decap: true }, function (result) {
+            getHighlightedText(command, result.decap)
+        })
+    } else if (command === '4_highlightBroadcast') {
+        highlightBroadcast()
+    } else if (command === '5_highlightPreviewWords') {
+        checkingWords()
+    } else if (command === 'd_copyIDs') {
+        getAllIDs()
+    } else if (command === 'l_addLink') {
+        addLink()
+    } else if (command === 'l_openLinks') {
+        openLinks()
+    } else if (command === 'c1_saveID') {
+        saveID()
+    } else if (command === 'c_copyID') {
+        copyID()
+    } else if (command === 'c_deleteIDs') {
+        deleteIDs()
+    } else if (command === '3_changeCase') {
+        changeCase()
+    } else if (command === 'c2_pasteEntireField') {
+        pasteValue('entireField')
+    } else if (command === 'c2_pasteWithContext') {
+        pasteValue('keepContext')
+    } else {
+        copy('', command)
+    }
+})
+
+
 function getCopyCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({ copyCaps: defaultCopyCaps }, function(data){
+        chrome.storage.local.get({ copyCaps: defaultCopyCaps }, function (data) {
             options(data.copyCaps)
         })
     })
 }
 function getCopyPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({ copyPropers: defaultProperNouns }, function(data){
+        chrome.storage.local.get({ copyPropers: defaultProperNouns }, function (data) {
             options(data.copyPropers)
         })
     })
@@ -80,7 +85,7 @@ async function copy(str, setting, decap = true) {
             .split(' ')
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
-                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1], properNouns, skipDecapping)
+                if (words[i + 1]) words[i] = decapWord(words[i], i, words[i + 1], properNouns, skipDecapping)
                 else words[i] = decapWord(words[i], i)
             }
         }
@@ -88,22 +93,23 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
+        sendCopiedValue(words.join(' '))
     } else if (setting === '2_abc') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/ Key points.*\n/, '\n')
             .split('\n')
             .filter(x => x.length > 0 &&
-            (x.endsWith('.') ||
-            x.endsWith('\'') ||
-            x.endsWith('!') ||
-            x.endsWith('?') ||
-            x.endsWith('\'')
-            ))
+                (x.endsWith('.') ||
+                    x.endsWith('\'') ||
+                    x.endsWith('!') ||
+                    x.endsWith('?') ||
+                    x.endsWith('\'')
+                ))
             .join(' ').split(' ')
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
-                if (words[i+1]) words[i] = decapWord(words[i], i, words[i+1], properNouns, skipDecapping)
+                if (words[i + 1]) words[i] = decapWord(words[i], i, words[i + 1], properNouns, skipDecapping)
                 else words[i] = decapWord(words[i], i)
             }
         }
@@ -111,13 +117,14 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
+        sendCopiedValue(words.join(' '))
     } else if (setting === 'copyIDs') {
         sandbox.value = str
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-    }  else {
-        chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function(result) {
+    } else {
+        chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function (result) {
             console.log(result)
             console.log(setting)
             sandbox.value = result.staticText[commandObj[setting]]
@@ -130,35 +137,47 @@ async function copy(str, setting, decap = true) {
 
 // This gets the highlighted text from the webpage.
 function getHighlightedText(setting, decap) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'getHighlightedText' }, function(response) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'getHighlightedText' }, function (response) {
             copy(response.copy, setting, decap)
         })
     })
 }
 
 function getAllIDs() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'copyIDs' }, function(response) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'copyIDs' }, function (response) {
             copy(response.copy, 'copyIDs')
         })
     })
 }
 
 function changeCase() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'changeCase' })
     })
 }
 
+function pasteValue(setting) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', setting: setting })
+    })
+}
+
+function sendCopiedValue(text) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'lastCopiedValue', data: text })
+    })
+}
+
 function highlightBroadcast() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'highlight' })
     })
 }
 
 function checkingWords() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'checkingWords' })
     })
 }
@@ -206,8 +225,8 @@ function openLinks() {
 }
 
 function saveID() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'getHighlightedText' }, function(response) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'getHighlightedText' }, function (response) {
             if (!isNaN(response.copy.replace('Item ID: ', '').substring(1))) {
                 savedIDs.push(response.copy.replace('Item ID: ', ''))
             }
