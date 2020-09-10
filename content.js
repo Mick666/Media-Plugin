@@ -12,18 +12,89 @@ const possibleSubheadings = ['exclusive', 'inside']
 let seenIDs = []
 let listenerOptions = [true, true, true]
 let checkingHasRun = false
-let lastPluginCopy = ''
+let lastHighlightedElement = null
 
-chrome.storage.local.get({ listenerOptions: [true, true, true] }, function(data){
-    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings'  && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view' )  {
+chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
+    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         document.addEventListener('scroll', func)
         listenerOptions = data.listenerOptions
     }
 })
 
-chrome.storage.local.get({ heroSentenceOption: true }, function(data){
-    if (data.heroSentenceOption && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings')  {
-        document.addEventListener('scroll', function() {
+function createDivider() {
+    let newList = document.createElement('li')
+    newList.className = 'divider'
+    return newList
+}
+function createNewListItem() {
+    let newListItem = document.createElement('li')
+    newListItem.className = 'ng-scope'
+    let newLink = document.createElement('a')
+    newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
+    newLink.innerText = 'PLUGIN: Headline (Asc)'
+    newLink.addEventListener('click', sortItems)
+
+    newListItem.appendChild(newLink)
+    return newListItem
+}
+function sortItems() {
+    let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
+    for (let i = 0; i < groups.length; i++) {
+        let parent = groups[i].firstElementChild.firstElementChild
+        let children = [...parent.children]
+        children.sort((a, b) => {
+            let aText = a.firstElementChild.firstElementChild.children[1].innerText
+            let bText = b.firstElementChild.firstElementChild.children[1].innerText
+            if (aText < bText) {
+                return -1
+            }
+            if (aText > bText) {
+                return 1
+            }
+            return 0
+        })
+        for (let j = 0; j < children.length; j++) {
+            parent.appendChild(children[j])
+        }
+    }
+}
+
+function createNewListItemDesc() {
+    let newListItem = document.createElement('li')
+    newListItem.className = 'ng-scope'
+    let newLink = document.createElement('a')
+    newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
+    newLink.innerText = 'PLUGIN: Headline (Desc)'
+    newLink.addEventListener('click', sortItemsDesc)
+
+    newListItem.appendChild(newLink)
+    return newListItem
+}
+function sortItemsDesc() {
+    let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
+    for (let i = 0; i < groups.length; i++) {
+        let parent = groups[i].firstElementChild.firstElementChild
+        let children = [...parent.children]
+        children.sort((a, b) => {
+            let aText = a.firstElementChild.firstElementChild.children[1].innerText
+            let bText = b.firstElementChild.firstElementChild.children[1].innerText
+            if (aText > bText) {
+                return -1
+            }
+            if (aText < bText) {
+                return 1
+            }
+            return 0
+        })
+        for (let j = 0; j < children.length; j++) {
+            parent.appendChild(children[j])
+        }
+    }
+}
+
+chrome.storage.local.get({ heroSentenceOption: true }, function (data) {
+    if (data.heroSentenceOption && window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings') {
+        document.addEventListener('scroll', function () {
             const readMores = [...document.getElementsByClassName('btn-read-more ng-scope')].filter(item => item.firstElementChild && item.firstElementChild.innerText === 'Read more...')
             readMores.forEach(item => item.firstElementChild.click())
         })
@@ -41,13 +112,13 @@ function func() {
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
         .filter(item => !item.className.includes('edited') &&
-        item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
+            item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
 
     items.forEach(item => {
-        if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')){
+        if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
-        }else if (listenerOptions[1] && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
+        } else if (listenerOptions[1] && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
         } else if (listenerOptions[2] && !item.className.includes('master')) {
@@ -57,20 +128,20 @@ function greyOutAutomatedBroadcast() {
     })
 }
 
-chrome.storage.local.get({ readmoreScroll: true }, function(data){
-    if (data.readmoreScroll){
-        document.addEventListener('mousedown', function(e) {
+chrome.storage.local.get({ readmoreScroll: true }, function (data) {
+    if (data.readmoreScroll) {
+        document.addEventListener('mousedown', function (e) {
             if (e.target.outerText === ' Read More') {
-                setTimeout(function(){
+                setTimeout(function () {
                     e.target.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].scrollIntoView(true)
-                    window.scrollTo(window.scrollX, window.scrollY-150)
+                    window.scrollTo(window.scrollX, window.scrollY - 150)
                 }, 1000)
             }
         })
     }
 })
 
-document.addEventListener('mousedown', function(e) {
+document.addEventListener('mousedown', function (e) {
     if (e.button !== 0 || e.ctrlKey || !e.target) return
     if (((e.target.className && e.target.className === 'coverage-anchor') ||
         (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
@@ -78,6 +149,13 @@ document.addEventListener('mousedown', function(e) {
         && / Brief| Folder/.test(e.target.parentElement.outerText)) {
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else document.title = e.target.outerText.trimEnd()
+        setTimeout(function() {
+            if (document.getElementsByClassName('sorting dropdown').length > 0) {
+                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
+                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem())
+                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItemDesc())
+            }
+        }, 1000)
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
         document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
@@ -96,9 +174,14 @@ document.addEventListener('mousedown', function(e) {
     }
 })
 
-window.onload = function() {
+window.onload = function () {
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
+        if (document.getElementsByClassName('sorting dropdown').length > 0) {
+            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
+            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem())
+            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItemDesc())
+        }
     } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
         document.title = 'DB Platform'
     } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
@@ -109,9 +192,10 @@ window.onload = function() {
 }
 
 chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
+    function (request, sender, sendResponse) {
         if (request.action === 'getHighlightedText') {
             sendResponse({ copy: window.getSelection().toString() })
+            lastHighlightedElement = document.getSelection().baseNode
         } else if (request.action === 'highlight') {
             highlightBroadcastItems()
         } else if (request.action === 'checkingWords' && !checkingHasRun) {
@@ -123,9 +207,7 @@ chrome.runtime.onMessage.addListener(
         } else if (request.action === 'changeCase') {
             changeCase()
         } else if (request.action === 'setFieldValue') {
-            setFieldValue(lastPluginCopy, request.setting)
-        }  else if (request.action === 'lastCopiedValue') {
-            lastPluginCopy = request.data
+            setFieldValue(request.data)
         }
     })
 
@@ -134,9 +216,9 @@ function highlightBroadcastItems() {
     for (let i = 0; i < headlines.length; i++) {
         if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText)
             && (headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-volume-up' ||
-            headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
+                headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
             headlines[i].firstChild.innerHTML = headlines[i].firstChild.innerHTML
-                .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function(match) {
+                .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function (match) {
                     return '<span style=\'background-color:#FDFF47;\'>' + match + '</span>'
                 })
         }
@@ -158,7 +240,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
             byline[1] = '<span style=\'background-color:#8A2BE2;\'>' + byline[1] + '</span>'
         }
         if (byline.length < 2) return byline
-        byline[byline.length-1] = checkContentDates(byline[byline.length-1], byline[0], byline[1])
+        byline[byline.length - 1] = checkContentDates(byline[byline.length - 1], byline[0], byline[1])
         if (byline.length < 3 || /[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[2])) return byline
         if (byline[3] && (/^[0-9]{2}\//).test(!byline[3]) && !byline[3].startsWith('Page')) {
             for (let i = 3; i < byline.length; i++) {
@@ -237,17 +319,17 @@ function checkContentDates(date, outlet, mediatype) {
     let contentDate = new Date(Date.parse(date.replace(/([0-9]{2})\/([0-9]{2})/, '$2/$1')))
 
     if (metroPapers.includes(outlet) && mediatype !== 'Other' && contentDate < datesForChecks[0]) {
-        return  '<span style=\'background-color:#8A2BE2;\'>' + date + '</span>'// possible old content
+        return '<span style=\'background-color:#8A2BE2;\'>' + date + '</span>'// possible old content
     } else if (contentDate < datesForChecks[2]) {
-        return  '<span style=\'background-color:#8A2BE2;\'>' + date + '</span>'// possible old content
+        return '<span style=\'background-color:#8A2BE2;\'>' + date + '</span>'// possible old content
     }
     return date
 }
 
 function getLastThreeDates() {
-    let todaysDate = new Date(new Date().setHours(0,0,0,0))
-    let dayBefore = new Date().setDate(todaysDate.getDate()-1)
-    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate()-3)
+    let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
+    let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
+    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
     return [todaysDate, dayBefore, dayBeforeYesterday]
 }
 
@@ -267,14 +349,14 @@ function highlightHeadlines(headline, headlinesChecked) {
 
 function getCheckingCaps() {
     return new Promise(options => {
-        chrome.storage.local.get({ copyCaps: defaultCheckCaps }, function(data){
+        chrome.storage.local.get({ copyCaps: defaultCheckCaps }, function (data) {
             options(data.copyCaps)
         })
     })
 }
 function getCheckingPropers() {
     return new Promise(options => {
-        chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function(data){
+        chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function (data) {
             options(data.copyPropers)
         })
     })
@@ -320,25 +402,25 @@ async function checkingHighlights() {
         let itemContent = itemSummaries[i].firstElementChild.firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
 
         itemSummaries[i].firstElementChild.innerHTML = itemContent
-            .replace(/.*?[.!?](?:\s|$)/, function(match) {
-                return match.replace('writes', function(submatch) {
+            .replace(/.*?[.!?](?:\s|$)/, function (match) {
+                return match.replace('writes', function (submatch) {
                     return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>'// possible subheading
                 })
             })
-            .replace(/^.*?[.!?](?:\s|$)/g, function(match) {
+            .replace(/^.*?[.!?](?:\s|$)/g, function (match) {
                 return match
-                    .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function(submatch) {
+                    .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function (submatch) {
                         if (skipDecapping.indexOf(submatch) > -1 || submatch === 'I' || submatch === 'MPs') return submatch
                         return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' // possible all caps
                     })
-                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch, _, offset) {
+                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function (submatch, _, offset) {
                         if (submatch === 'amp') return submatch
                         // Checks the lower case & title case words
 
-                        if (skipDecapping.indexOf(submatch.toUpperCase()) > -1  && offset < 30 ) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
+                        if (skipDecapping.indexOf(submatch.toUpperCase()) > -1 && offset < 30) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
 
                         else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase())
-                    && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30 ) {
+                            && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30) {
                             console.log(offset)
                             return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible proper noun
 
@@ -347,20 +429,20 @@ async function checkingHighlights() {
                         }
                         return submatch
                     })
-                    .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function(submatch) {
-                    // Checks the first word of the match
+                    .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function (submatch) {
+                        // Checks the first word of the match
                         if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1 || submatch === submatch.toLowerCase()) return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' //Possible all caps
                         else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>' // Possible subheadings
                         return submatch
                     })
-                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function(submatch, _, offset) {
+                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function (submatch, _, offset) {
                         if ((submatch === 'The' || submatch === 'A') && offset > 0) {
                             return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>' // Possible subheadings
                         }
                         return submatch
                     })
             })
-            .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function(submatch) {
+            .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function (submatch) {
                 if (submatch.length > 0) return '<span style=\'background-color:#FF0000;\'>' + submatch + '</span>'// swear word
                 return submatch
             })
@@ -398,15 +480,17 @@ function changeCase() {
     textBox.dispatchEvent(textfieldUpdated)
 }
 
-function setFieldValue (text, setting) {
-    let textBox = document.activeElement
-    if (setting === 'entireField') {
-        textBox.value = text
-    } else if (setting === 'keepContext') {
-        let textBoxData = textBox.value.split('[...]')
-        textBoxData[0] = text
+function setFieldValue(data) {
+    if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown') return
+    let textBox = document.getSelection().baseNode.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+    let textBoxData = textBox.value.split('[...]')
+    if (textBoxData.length === 1) {
+        textBox.value = data
+    } else {
+        if (!data.endsWith(' ')) data += ' '
+        textBoxData[0] = data
         textBox.value = textBoxData.join('[...]')
-    } else return
+    }
 
     var textfieldUpdated = new Event('input', {
         bubbles: true,
@@ -419,19 +503,19 @@ function setFieldValue (text, setting) {
 function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
-    case 'AllCaps':
-        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
-    case 'Title Case':
-        return text.split(' ').map((word, index) => {
-            if (index === 0) return toSentenceCase(word)
-            else return word.toLowerCase()
-        }).join(' ')
-    case 'Sentence case':
-        return text.toLowerCase()
-    case 'lower case':
-        return text.toUpperCase()
-    default:
-        return text
+        case 'AllCaps':
+            return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+        case 'Title Case':
+            return text.split(' ').map((word, index) => {
+                if (index === 0) return toSentenceCase(word)
+                else return word.toLowerCase()
+            }).join(' ')
+        case 'Sentence case':
+            return text.toLowerCase()
+        case 'lower case':
+            return text.toUpperCase()
+        default:
+            return text
     }
 
 }

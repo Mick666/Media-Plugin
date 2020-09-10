@@ -139,7 +139,7 @@ chrome.commands.getAll(function(commands) {
         if (command.name === '1_paste') {
             createOption(command.shortcut, 'Removes linebreaks from copied text', 'Linebreak copy')
         } else if (command.name === '2_abc') {
-            createOption(command.shortcut, 'Ignores ABC\'s Key Points when copying text', 'ABC copy')
+            createOption(command.shortcut, 'Ignores ABC\'s Key Points/subheadings when copying text', 'ABC copy')
         } else if (command.name === '3_changeCase') {
             createOption(command.shortcut, 'Changes the case of highlighted text', 'Case change')
         } else if (command.name ==='4_highlightBroadcast') {
@@ -157,9 +157,9 @@ chrome.commands.getAll(function(commands) {
         } else if (command.name ==='c_deleteIDs') {
             createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
         } else if (command.name ==='c2_pasteEntireField') {
-            createOption(command.shortcut, 'Sets the text field to your last copied value', 'Text field replacer')
+            createOption(command.shortcut, 'Copies text w/o linebreaks then updates the item\'s text field', 'Text field replacer')
         } else if (command.name ==='c2_pasteWithContext') {
-            createOption(command.shortcut, 'Sets the text field to your last copied value, but keeps the text after [...]', 'Text field replacer with context')
+            createOption(command.shortcut, 'Ignores ABC\'s Key Points when copying text, then updates the item\'s text field with the selected text', 'Text field replacer without Key Points/subheadings')
         } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut

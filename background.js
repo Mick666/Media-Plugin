@@ -46,9 +46,13 @@ chrome.commands.onCommand.addListener(function (command) {
     } else if (command === '3_changeCase') {
         changeCase()
     } else if (command === 'c2_pasteEntireField') {
-        pasteValue('entireField')
+        chrome.storage.local.get({ decap: true }, function (result) {
+            getHighlightedText(command, result.decap)
+        })
     } else if (command === 'c2_pasteWithContext') {
-        pasteValue('keepContext')
+        chrome.storage.local.get({ decap: true }, function (result) {
+            getHighlightedText(command, result.decap)
+        })
     } else {
         copy('', command)
     }
@@ -76,7 +80,7 @@ async function copy(str, setting, decap = true) {
     let skipDecapping = await getCopyCaps()
     console.log(properNouns)
     var sandbox = document.getElementById('sandbox')
-    if (setting === '1_paste') {
+    if (setting === '1_paste' || setting === 'c2_pasteEntireField') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/\n/g, ' ')
@@ -93,8 +97,8 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-        sendCopiedValue(words.join(' '))
-    } else if (setting === '2_abc') {
+        if (setting === 'c2_pasteEntireField') updateField(words.join(' '))
+    } else if (setting === '2_abc' || setting === 'c2_pasteWithContext') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/ Key points.*\n/, '\n')
@@ -117,7 +121,7 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-        sendCopiedValue(words.join(' '))
+        if (setting === 'c2_pasteWithContext') updateField(words.join(' '))
     } else if (setting === 'copyIDs') {
         sandbox.value = str
         sandbox.select()
@@ -158,9 +162,9 @@ function changeCase() {
     })
 }
 
-function pasteValue(setting) {
+function updateField(data) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', setting: setting })
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', data: data })
     })
 }
 
