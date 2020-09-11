@@ -1,5 +1,5 @@
-const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US',
-    'CSIRO', 'UK', 'TPG', 'CEO', 'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES']
+const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 'CSIRO', 'UK', 'TPG', 'CEO',
+    'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES', 'UN', 'PNG', 'AFMA', 'ABF', 'ASIC', 'ASIO', 'CBD', 'CCTV', 'HSC', 'HECS']
 const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
     'Annastacia', 'Palaszczuk', 'Gladys', 'Berejiklian', 'Mark', 'McGowan', 'Steven', 'Marshall', 'Peter', 'Gutwein', 'Andrew', 'Barr',
     'Michael', 'Gunner', 'Dutton', 'Alan', 'Tudge', 'Kevin', 'Rudd', 'Anthony', 'Albanese', 'Tanya', 'Plibersek', 'Brendan', 'O\'Connor',
@@ -8,7 +8,6 @@ const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 
     'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
-const possibleSubheadings = ['exclusive', 'inside']
 let seenIDs = []
 let listenerOptions = [true, true, true]
 let checkingHasRun = false
@@ -120,7 +119,7 @@ document.addEventListener('mousedown', function (e) {
         && / Brief| Folder/.test(e.target.parentElement.outerText)) {
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else document.title = e.target.outerText.trimEnd()
-        setTimeout(function() {
+        setTimeout(function () {
             if (document.getElementsByClassName('sorting dropdown').length > 0) {
                 addHeadlineSortOptions()
             }
@@ -355,64 +354,53 @@ async function checkingHighlights() {
     let itemSummaries = document.getElementsByClassName('item-content-hook')
 
     for (let i = 0; i < itemSummaries.length; i++) {
+        if (authorLines[i].innerText.length === 0) {
+            let headline = headlines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
 
-        let authorLine = authorLines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
+            headlines[i].firstElementChild.innerHTML = cleanUpAuthorLines(headline, isIndustry).join(', ')
+        } else {
+            let authorLine = authorLines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '').split(', ')
 
-        if (authorLine[0].length === 0) continue
+            authorLines[i].firstElementChild.innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
 
-        authorLines[i].firstElementChild.innerHTML = cleanUpAuthorLines(authorLine, isIndustry).join(', ')
+            let headline = headlines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
 
-        let headline = headlines[i].firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
+            headlines[i].firstElementChild.innerHTML = highlightHeadlines(headline, headlinesChecked)
 
-        headlines[i].firstElementChild.innerHTML = highlightHeadlines(headline, headlinesChecked)
+        }
 
         let itemContent = itemSummaries[i].firstElementChild.firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
+        let itemContentWords = itemContent.split(' ')
 
-        itemSummaries[i].firstElementChild.innerHTML = itemContent
-            .replace(/.*?[.!?](?:\s|$)/, function (match) {
-                return match.replace('writes', function (submatch) {
-                    return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>'// possible subheading
-                })
-            })
-            .replace(/^.*?[.!?](?:\s|$)/g, function (match) {
-                return match
-                    .replace(/([^ \W]*[A-Z]{2,}[^ \W]*)/g, function (submatch) {
-                        if (skipDecapping.indexOf(submatch) > -1 || submatch === 'I' || submatch === 'MPs') return submatch
-                        return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' // possible all caps
-                    })
-                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function (submatch, _, offset) {
-                        if (submatch === 'amp') return submatch
-                        // Checks the lower case & title case words
+        for (let j = 0; j < itemContentWords.length; j++) {
 
-                        if (skipDecapping.indexOf(submatch.toUpperCase()) > -1 && offset < 30) return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>'
+            let word = itemContentWords[j].replace(/[.!?,]["']{0,1}$/, '')
 
-                        else if ((submatch === submatch.toLowerCase() || submatch === submatch.toUpperCase())
-                            && properNouns.indexOf(toSentenceCase(submatch)) > -1 && offset < 30) {
-                            console.log(offset)
-                            return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible proper noun
+            if (j === 0 && (/Exclusive|Inside/i).test(word)) {
+                itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>`// Possible subheading
+            } else if ((/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)/i).test(word)) {
+                itemContentWords[j] = `<span style='background-color:#FF0000;'>${itemContentWords[j]}</span>` // Possible swear word
+            } else if (word.toUpperCase() === word && (/[A-Z]/).test(word)) {
+                if (skipDecapping.includes(word) || word === 'I' || word === 'A') console.log(word) // Bad matches, can end the loop for this word here
+                else if (properNouns.includes(toSentenceCase(word))) {
+                    itemContentWords[j] = `<span style='background-color:#00FF00;'>${itemContentWords[j]}</span>`
+                } else {
+                    itemContentWords[j] = `<span style='background-color:#FDFF47;'>${itemContentWords[j]}</span>`
+                }
+            } else if (j > 0 && (word === 'The' || word === 'A')) {
+                itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>` // Possible subheading
+            } else if (word === word.toLowerCase()) {
+                if (properNouns.includes(toSentenceCase(word)) || skipDecapping.includes(word.toUpperCase()) || word === 'scomo') {
+                    itemContentWords[j] = `<span style='background-color:#00FF00;'>${itemContentWords[j]}</span>`
+                }
+            }
 
-                        } else if (submatch.toLowerCase() === 'scomo' && submatch !== 'ScoMo') {
-                            return '<span style=\'background-color:#00FF00;\'>' + submatch + '</span>' //Possible ScoMo miscapping
-                        }
-                        return submatch
-                    })
-                    .replace(/^([^ \W]*[a-z]+[^ \W]*)/, function (submatch) {
-                        // Checks the first word of the match
-                        if (submatch !== toSentenceCase(submatch) && skipDecapping.indexOf(submatch) === -1 || submatch === submatch.toLowerCase()) return '<span style=\'background-color:#FDFF47;\'>' + submatch + '</span>' //Possible all caps
-                        else if (possibleSubheadings.indexOf(submatch.toLowerCase()) > -1) return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>' // Possible subheadings
-                        return submatch
-                    })
-                    .replace(/([^ \W]*[a-z]+[^ \W]*)/g, function (submatch, _, offset) {
-                        if ((submatch === 'The' || submatch === 'A') && offset > 0) {
-                            return '<span style=\'background-color:#8A2BE2;\'>' + submatch + '</span>' // Possible subheadings
-                        }
-                        return submatch
-                    })
-            })
-            .replace(/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)*/ig, function (submatch) {
-                if (submatch.length > 0) return '<span style=\'background-color:#FF0000;\'>' + submatch + '</span>'// swear word
-                return submatch
-            })
+            if ((/[.!?]["']{0,1}(?:\s|$)/).test(itemContentWords[j]) && j > 5) {
+                break
+            }
+        }
+
+        itemSummaries[i].firstElementChild.firstElementChild.innerHTML = itemContentWords.join(' ')
     }
 }
 
@@ -470,19 +458,19 @@ function setFieldValue(data) {
 function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
-        case 'AllCaps':
-            return text.split(' ').map(word => toSentenceCase(word)).join(' ')
-        case 'Title Case':
-            return text.split(' ').map((word, index) => {
-                if (index === 0) return toSentenceCase(word)
-                else return word.toLowerCase()
-            }).join(' ')
-        case 'Sentence case':
-            return text.toLowerCase()
-        case 'lower case':
-            return text.toUpperCase()
-        default:
-            return text
+    case 'AllCaps':
+        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+    case 'Title Case':
+        return text.split(' ').map((word, index) => {
+            if (index === 0) return toSentenceCase(word)
+            else return word.toLowerCase()
+        }).join(' ')
+    case 'Sentence case':
+        return text.toLowerCase()
+    case 'lower case':
+        return text.toUpperCase()
+    default:
+        return text
     }
 
 }
