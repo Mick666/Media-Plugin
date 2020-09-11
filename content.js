@@ -20,24 +20,28 @@ chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data
         listenerOptions = data.listenerOptions
     }
 })
-
+function addHeadlineSortOptions() {
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Asc'))
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Desc'))
+}
 function createDivider() {
     let newList = document.createElement('li')
     newList.className = 'divider'
     return newList
 }
-function createNewListItem() {
+function createNewListItem(direction) {
     let newListItem = document.createElement('li')
     newListItem.className = 'ng-scope'
     let newLink = document.createElement('a')
     newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
-    newLink.innerText = 'PLUGIN: Headline (Asc)'
-    newLink.addEventListener('click', sortItems)
+    newLink.innerText = `PLUGIN: Headline (${direction})`
+    newLink.addEventListener('click', () => sortItems(direction))
 
     newListItem.appendChild(newLink)
     return newListItem
 }
-function sortItems() {
+function sortItems(direction) {
     let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
     for (let i = 0; i < groups.length; i++) {
         let parent = groups[i].firstElementChild.firstElementChild
@@ -46,43 +50,10 @@ function sortItems() {
             let aText = a.firstElementChild.firstElementChild.children[1].innerText
             let bText = b.firstElementChild.firstElementChild.children[1].innerText
             if (aText < bText) {
-                return -1
+                return direction === 'Asc' ? -1 : 1
             }
             if (aText > bText) {
-                return 1
-            }
-            return 0
-        })
-        for (let j = 0; j < children.length; j++) {
-            parent.appendChild(children[j])
-        }
-    }
-}
-
-function createNewListItemDesc() {
-    let newListItem = document.createElement('li')
-    newListItem.className = 'ng-scope'
-    let newLink = document.createElement('a')
-    newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
-    newLink.innerText = 'PLUGIN: Headline (Desc)'
-    newLink.addEventListener('click', sortItemsDesc)
-
-    newListItem.appendChild(newLink)
-    return newListItem
-}
-function sortItemsDesc() {
-    let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
-    for (let i = 0; i < groups.length; i++) {
-        let parent = groups[i].firstElementChild.firstElementChild
-        let children = [...parent.children]
-        children.sort((a, b) => {
-            let aText = a.firstElementChild.firstElementChild.children[1].innerText
-            let bText = b.firstElementChild.firstElementChild.children[1].innerText
-            if (aText > bText) {
-                return -1
-            }
-            if (aText < bText) {
-                return 1
+                return direction === 'Asc' ? 1 : -1
             }
             return 0
         })
@@ -151,11 +122,9 @@ document.addEventListener('mousedown', function (e) {
         else document.title = e.target.outerText.trimEnd()
         setTimeout(function() {
             if (document.getElementsByClassName('sorting dropdown').length > 0) {
-                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
-                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem())
-                document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItemDesc())
+                addHeadlineSortOptions()
             }
-        }, 1000)
+        }, 2000)
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
         document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
@@ -178,9 +147,7 @@ window.onload = function () {
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
         if (document.getElementsByClassName('sorting dropdown').length > 0) {
-            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
-            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem())
-            document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItemDesc())
+            addHeadlineSortOptions()
         }
     } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
         document.title = 'DB Platform'
