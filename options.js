@@ -179,14 +179,6 @@ chrome.commands.getAll(function(commands) {
         }
     })
 })
-// Click here to access PDF version of print articles
-// Click here to access text version of print articles
-// Click here to access combined PDF report of today's front pages
-// Click here to access all print articles
-// Click here to view all print articles
-// Michael.Martino@isentia.com
-// The Minister for Trade, Tourism and Investment is also mentioned in 'X' in the Minister for Foreign Affairs section
-// The Department of Foreign Affairs and Trade is also mentioned in 'X' in the Minister for Foreign Affairs section
 
 chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function(data){
     for (let i = 0; i < 10; i++) {
