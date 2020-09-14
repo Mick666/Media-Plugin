@@ -45,6 +45,8 @@ chrome.commands.onCommand.addListener(function (command) {
         deleteIDs()
     } else if (command === '3_changeCase') {
         changeCase()
+    }  else if (command === '3_toSentenceCase') {
+        changeToSentenceCase()
     } else if (command === 'c2_pasteEntireField') {
         chrome.storage.local.get({ decap: true }, function (result) {
             getHighlightedText(command, result.decap)
@@ -74,13 +76,21 @@ function getCopyPropers() {
     })
 }
 
+function getTextFieldReplace() {
+    return new Promise(options => {
+        chrome.storage.local.get({ textFieldReplace: true }, function (data) {
+            options(data.textFieldReplace)
+        })
+    })
+}
+
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
 async function copy(str, setting, decap = true) {
     let properNouns = await getCopyPropers()
     let skipDecapping = await getCopyCaps()
-    console.log(properNouns)
+    let textFieldReplaceOption = await getTextFieldReplace()
     var sandbox = document.getElementById('sandbox')
-    if (setting === '1_paste' || setting === 'c2_pasteEntireField') {
+    if (setting === '1_paste') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/\n/g, ' ')
@@ -97,8 +107,8 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-        if (setting === 'c2_pasteEntireField') updateField(words.join(' '))
-    } else if (setting === '2_abc' || setting === 'c2_pasteWithContext') {
+        if (textFieldReplaceOption) updateField(words.join(' '))
+    } else if (setting === '2_abc') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/ Key points.*\n/, '\n')
@@ -121,7 +131,7 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-        if (setting === 'c2_pasteWithContext') updateField(words.join(' '))
+        if (textFieldReplaceOption) updateField(words.join(' '))
     } else if (setting === 'copyIDs') {
         sandbox.value = str
         sandbox.select()
@@ -162,15 +172,15 @@ function changeCase() {
     })
 }
 
-function updateField(data) {
+function changeToSentenceCase() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', data: data })
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'changeToSentenceCase' })
     })
 }
 
-function sendCopiedValue(text) {
+function updateField(data) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'lastCopiedValue', data: text })
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', data: data })
     })
 }
 

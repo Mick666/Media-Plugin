@@ -172,6 +172,8 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ copy: IDs })
         } else if (request.action === 'changeCase') {
             changeCase()
+        } else if (request.action === 'changeToSentenceCase') {
+            changeToSentenceCase()
         } else if (request.action === 'setFieldValue') {
             setFieldValue(request.data)
         }
@@ -415,14 +417,18 @@ function getAllIDs() {
 }
 
 function changeCase() {
-    if (window.getSelection().toString().length === 0 || !window.getSelection().toString()) return
-
     var textBox = document.activeElement
-    var text = changeSelectedText(window.getSelection().toString())
 
     if (textBox.selectionStart !== undefined) {
         var startPos = textBox.selectionStart
         var endPos = textBox.selectionEnd
+        var text = changeSelectedText(window.getSelection().toString())
+        console.log(startPos, endPos, text)
+        if (startPos === endPos) {
+            startPos = expandStartPos(textBox.value, startPos)
+            endPos = expandEndPos(textBox.value, endPos)
+            text = changeSelectedText(textBox.value.slice(startPos, endPos))
+        }
         textBox.value = textBox.value.slice(0, startPos) + text + textBox.value.slice(endPos)
         textBox.setSelectionRange(startPos, endPos)
     }
@@ -434,6 +440,53 @@ function changeCase() {
 
     textBox.dispatchEvent(textfieldUpdated)
 }
+
+function expandStartPos(text, startPos) {
+    while (text[startPos] !== ' ' && startPos > 0) {
+        startPos--
+    }
+    return startPos > 0 ? startPos + 1 : startPos
+}
+
+function expandEndPos(text, endPos) {
+    while (text[endPos] !== ' ' && endPos < text.length - 1) {
+        endPos++
+    }
+    return endPos
+}
+
+function changeToSentenceCase() {
+
+    var textBox = document.activeElement
+    var text = window.getSelection().toString()
+
+    if (textBox.selectionStart !== undefined) {
+        var startPos = textBox.selectionStart
+        var endPos = textBox.selectionEnd
+        if (startPos === endPos) {
+            startPos = expandStartPos(textBox.value, startPos)
+            endPos = expandEndPos(textBox.value, endPos)
+            text = textBox.value.slice(startPos, endPos)
+        }
+        text = text
+            .split(' ')
+            .map((word, index) => {
+                if (index === 0) return toSentenceCase(word)
+                else return word.toLowerCase()
+            })
+            .join(' ')
+        textBox.value = textBox.value.slice(0, startPos) + text + textBox.value.slice(endPos)
+        textBox.setSelectionRange(startPos, endPos)
+    }
+
+    var textfieldUpdated = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+    })
+
+    textBox.dispatchEvent(textfieldUpdated)
+}
+
 
 function setFieldValue(data) {
     if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown') return

@@ -63,6 +63,10 @@ window.addEventListener('load', async () => {
     chrome.storage.local.get({ decap: true }, function(data){
         document.getElementById('decap').children[0].checked = data.decap
     })
+
+    chrome.storage.local.get({ textFieldReplace: true }, function(data){
+        document.getElementById('textBoxReplace').children[0].checked = data.textFieldReplace
+    })
     loadTextFieldData()
 })
 
@@ -116,6 +120,17 @@ document.getElementById('decap').addEventListener('change', function(e) {
         })
     }
 })
+
+document.getElementById('textBoxReplace').addEventListener('change', function(e) {
+    if (e.target.checked) {
+        chrome.storage.local.set({ textFieldReplace: true }, function() {
+        })
+    } else {
+        chrome.storage.local.set({ textFieldReplace: false }, function() {
+        })
+    }
+})
+
 const itemGrid = document.getElementsByClassName('itemGrid')
 const hotkeyGrid = document.getElementById('parentGrid')
 
@@ -156,10 +171,8 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Copies all saved IDs to your clipboard', 'Individual ID copier')
         } else if (command.name ==='c_deleteIDs') {
             createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
-        } else if (command.name ==='c2_pasteEntireField') {
-            createOption(command.shortcut, 'Copies text w/o linebreaks then updates the item\'s text field', 'Text field replacer')
-        } else if (command.name ==='c2_pasteWithContext') {
-            createOption(command.shortcut, 'Ignores ABC\'s Key Points when copying text, then updates the item\'s text field with the selected text', 'Text field replacer without Key Points/subheadings')
+        } else if (command.name ==='3_toSentenceCase') {
+            createOption(command.shortcut, 'Changes highlighted text to Sentence Case', 'Case change to Sentence case')
         } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut

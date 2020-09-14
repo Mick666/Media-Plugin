@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.4.2",
+    "version": "0.6.4.3",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -23,10 +23,16 @@
     },
     "commands": {
         "1_paste" : {
-            "description": "Copy without linebreaks"
+            "description": "Copy without linebreaks",
+            "suggested_key": {
+                "default": "Ctrl+Shift+A"
+            }
         },
         "2_abc": {
-            "description": "Copy without ABC's Key Points"
+            "description": "Copy without ABC's Key Points",
+            "suggested_key": {
+                "default": "Ctrl+Shift+Q"
+            }
         },
         "static-text-1": {
             "description": "Static text #1"
@@ -89,17 +95,8 @@
             },
             "description": "Changes the case of highlighted text"
         },
-        "c2_pasteEntireField": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+A"
-            },
-            "description": "Text field replacer"
-        },
-        "c2_pasteWithContext": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+Q"
-            },
-            "description": "Text field replacer with context"
+        "3_toSentenceCase": {
+            "description": "Changes the highlighted case to Sentence case"
         }
     }
 }
