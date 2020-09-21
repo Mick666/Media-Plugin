@@ -173,7 +173,9 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
         } else if (command.name ==='3_toSentenceCase') {
             createOption(command.shortcut, 'Changes highlighted text to Sentence Case', 'Case change to Sentence case')
-        } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
+        }  else if (command.name ==='30_fixPressSyndications') {
+            createOption(command.shortcut, 'Makes all press items the parent item if they have a syndication', 'Press syndication fixer')
+        }else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
             if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'

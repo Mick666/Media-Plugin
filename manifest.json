@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.4.3",
+    "version": "0.6.4.5",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -97,6 +97,9 @@
         },
         "3_toSentenceCase": {
             "description": "Changes the highlighted case to Sentence case"
+        },
+        "30_fixPressSyndications": {
+            "description": "Makes all press items the parent item if they have a syndication"
         }
     }
 }

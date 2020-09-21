@@ -13,6 +13,8 @@ let listenerOptions = [true, true, true]
 let checkingHasRun = false
 let lastHighlightedElement = null
 
+// .setAttribute( 'style', 'border-color: yellow !important' )
+
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         document.addEventListener('scroll', func)
@@ -176,8 +178,43 @@ chrome.runtime.onMessage.addListener(
             changeToSentenceCase()
         } else if (request.action === 'setFieldValue') {
             setFieldValue(request.data)
+        } else if (request.action === 'fixPressSyndications') {
+            fixPressSyndications()
         }
+    }
+)
+
+function fixPressSyndications() {
+    let items = [...document.querySelectorAll('mat-expansion-panel')]
+        .filter(item => item.className.search('standardMode') > -1 &&
+        item.firstElementChild.firstElementChild.firstElementChild
+            .children[1].children[1].children[2].firstElementChild
+            .className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted')
+
+    items.forEach(item => {
+        if (item.children[1].firstElementChild.innerText === '') {
+            item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        }
+        if (item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].childElementCount !== 3) return
+        const SyndList = item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].children[2].children[2]
+        if (SyndList.childElementCount === 0) return
+        else if ((/\(Online\)/).test(SyndList.firstElementChild.innerText)) return
+
+        item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3]
+            .children[1].children[2].children[2].children[0].firstElementChild.children[2].firstElementChild.children[1].firstElementChild.click() // Make parent
     })
+
+    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+        .filter(item =>
+            item.className.search('standardMode') > -1 &&
+            item.className.search('mat-expanded') > -1)
+
+    openedItems.forEach(item => {
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        item.parentElement.parentElement.firstElementChild.children[1].click()
+    })
+}
+
 
 function highlightBroadcastItems() {
     const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')
@@ -305,7 +342,9 @@ function getLastThreeDates() {
 function highlightHeadlines(headline, headlinesChecked) {
     // if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
     let editedHeadline = headline
-    if (headline.toUpperCase() === headline) {
+    if ((/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)/i).test(headline)) {
+        editedHeadline = '<span style=\'background-color:#FF0000;\'>' + headline + '</span>'
+    } else if (headline.toUpperCase() === headline) {
         editedHeadline = '<span style=\'background-color:#FDFF47;\'>' + headline + '</span>'
     } else if (headlinesChecked.indexOf(headline.toLowerCase()) > -1) {
         editedHeadline = '<span style=\'background-color:#8A2BE2;\'>' + headline + '</span>'
@@ -376,7 +415,7 @@ async function checkingHighlights() {
 
         for (let j = 0; j < itemContentWords.length; j++) {
 
-            let word = itemContentWords[j].replace(/[.!?,]["']{0,1}$/, '')
+            let word = itemContentWords[j].replace(/[.!?,]["']{0,1}$/, '').replace(/[^A-Za-z0-9-/]/g, '')
 
             if (j === 0 && (/Exclusive|Inside/i).test(word)) {
                 itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>`// Possible subheading
@@ -384,15 +423,15 @@ async function checkingHighlights() {
                 itemContentWords[j] = `<span style='background-color:#FF0000;'>${itemContentWords[j]}</span>` // Possible swear word
             } else if (word.toUpperCase() === word && (/[A-Z]/).test(word)) {
                 if (skipDecapping.includes(word) || word === 'I' || word === 'A') console.log(word) // Bad matches, can end the loop for this word here
-                else if (properNouns.includes(toSentenceCase(word))) {
+                else if (properNouns.includes(toSentenceCase(word)) && j < 4) {
                     itemContentWords[j] = `<span style='background-color:#00FF00;'>${itemContentWords[j]}</span>`
                 } else {
                     itemContentWords[j] = `<span style='background-color:#FDFF47;'>${itemContentWords[j]}</span>`
                 }
-            } else if (j > 0 && (word === 'The' || word === 'A')) {
+            } else if (j > 0 && j < 5 && (word === 'The' || word === 'A')) {
                 itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>` // Possible subheading
             } else if (word === word.toLowerCase()) {
-                if (properNouns.includes(toSentenceCase(word)) || skipDecapping.includes(word.toUpperCase()) || word === 'scomo') {
+                if ((properNouns.includes(toSentenceCase(word)) || skipDecapping.includes(word.toUpperCase()) || word === 'scomo')  && j < 4) {
                     itemContentWords[j] = `<span style='background-color:#00FF00;'>${itemContentWords[j]}</span>`
                 }
             }
