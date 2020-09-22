@@ -13,8 +13,6 @@ let listenerOptions = [true, true, true]
 let checkingHasRun = false
 let lastHighlightedElement = null
 
-// .setAttribute( 'style', 'border-color: yellow !important' )
-
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         document.addEventListener('scroll', func)
@@ -112,6 +110,75 @@ chrome.storage.local.get({ readmoreScroll: true }, function (data) {
         })
     }
 })
+
+function getPossibleSyndications() {
+    let headlineObj = {}
+    let bylineObj = {}
+    let syndColors = ['red', 'yellow', 'green', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
+    let colorCount = 0
+
+    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
+    let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')]
+    headlines[0].firstElementChild.innerText
+
+    for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
+        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '')
+        let headline = headlines[i].firstElementChild.innerText.toLowerCase()
+        if (byline === '') continue
+        if (bylineObj[byline]) {
+            bylineObj[byline].push(bylines[i])
+        } else {
+            bylineObj[byline] = [bylines[i]]
+        }
+
+        if (headlineObj[headline]) {
+            headlineObj[headline].push(headlines[i])
+        } else {
+            headlineObj[headline] = [headlines[i]]
+        }
+    }
+
+    bylineObj = filterObj(bylineObj)
+    headlineObj = filterObj(headlineObj)
+
+    for (let key in bylineObj) {
+        for (let i = 0; i < bylineObj[key].length; i++) {
+            const bylineParent = bylineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+            bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+            bylineParent.className += 'syndication-tagged'
+        }
+        if (colorCount + 1 === syndColors.length) colorCount = 0
+        else colorCount++
+    }
+
+    for (let key in headlineObj) {
+        for (let i = 0; i < headlineObj[key].length; i++) {
+            const headlineParent = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+
+            if (headlineParent.className.search('syndication-tagged') > -1) {
+                let color = headlineParent.style.borderColor
+                for (let j = i; j < headlineObj[key].length; j++) {
+                    const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+                    headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 2px;` )
+                }
+                if (colorCount - 1 < 0) colorCount = syndColors.length - 1
+                else colorCount--
+                break
+            } else {
+                headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+                headlineParent.className += 'syndication-tagged'
+            }
+        }
+        if (colorCount + 1 === syndColors.length) colorCount = 0
+        else colorCount++
+    }
+}
+
+function filterObj(obj) {
+    return Object.keys(obj)
+        .filter(key => obj[key].length > 1)
+        .reduce( (res, key) => (res[key] = obj[key], res), {} )
+}
 
 document.addEventListener('mousedown', function (e) {
     if (e.button !== 0 || e.ctrlKey || !e.target) return
@@ -228,6 +295,7 @@ function highlightBroadcastItems() {
                 })
         }
     }
+    getPossibleSyndications()
 }
 
 
