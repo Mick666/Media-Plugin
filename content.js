@@ -12,6 +12,7 @@ let seenIDs = []
 let listenerOptions = [true, true, true]
 let checkingHasRun = false
 let lastHighlightedElement = null
+let reclipObj = {}
 
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
@@ -94,6 +95,24 @@ function greyOutAutomatedBroadcast() {
         } else if (listenerOptions[2] && !item.className.includes('master')) {
             seenIDs.push(item.firstChild.innerText)
             item.className += ' master'
+        } else {
+            const headline = item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText.toLowerCase()
+            const itemID = item.firstChild.innerText.slice(9)
+            const publicationName = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText.replace(/ \(page [0-9]{1,2}\)/, '')
+            const key = headline + ' ' + publicationName
+
+
+            if (reclipObj[key]) {
+                if (reclipObj[key][1] < itemID) {
+                    reclipObj[key][0].style.opacity = '0.5'
+                    reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+                } else if (reclipObj[key][1] !== itemID) {
+                    item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                    item.className += ' edited'
+                }
+            } else {
+                reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+            }
         }
     })
 }
@@ -114,21 +133,25 @@ chrome.storage.local.get({ readmoreScroll: true }, function (data) {
 function getPossibleSyndications() {
     let headlineObj = {}
     let bylineObj = {}
-    let syndColors = ['red', 'yellow', 'green', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
+    let syndColors = ['red', 'gold', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
     let colorCount = 0
 
-    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
-    let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')]
-    headlines[0].firstElementChild.innerText
+    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')].filter(item =>
+        item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+        item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+    let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')].filter(item =>
+        item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+        item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
 
     for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
-        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '')
+        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase()
         let headline = headlines[i].firstElementChild.innerText.toLowerCase()
-        if (byline === '') continue
-        if (bylineObj[byline]) {
-            bylineObj[byline].push(bylines[i])
-        } else {
-            bylineObj[byline] = [bylines[i]]
+        if (byline !== '') {
+            if (bylineObj[byline]) {
+                bylineObj[byline].push(bylines[i])
+            } else {
+                bylineObj[byline] = [bylines[i]]
+            }
         }
 
         if (headlineObj[headline]) {
@@ -137,7 +160,6 @@ function getPossibleSyndications() {
             headlineObj[headline] = [headlines[i]]
         }
     }
-
     bylineObj = filterObj(bylineObj)
     headlineObj = filterObj(headlineObj)
 
@@ -150,15 +172,14 @@ function getPossibleSyndications() {
         if (colorCount + 1 === syndColors.length) colorCount = 0
         else colorCount++
     }
-
     for (let key in headlineObj) {
         for (let i = 0; i < headlineObj[key].length; i++) {
-            const headlineParent = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+            const headlineParent = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
 
             if (headlineParent.className.search('syndication-tagged') > -1) {
                 let color = headlineParent.style.borderColor
                 for (let j = i; j < headlineObj[key].length; j++) {
-                    const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+                    const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
                     headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 2px;` )
                 }
                 if (colorCount - 1 < 0) colorCount = syndColors.length - 1
@@ -530,7 +551,6 @@ function changeCase() {
         var startPos = textBox.selectionStart
         var endPos = textBox.selectionEnd
         var text = changeSelectedText(window.getSelection().toString())
-        console.log(startPos, endPos, text)
         if (startPos === endPos) {
             startPos = expandStartPos(textBox.value, startPos)
             endPos = expandEndPos(textBox.value, endPos)
@@ -549,6 +569,7 @@ function changeCase() {
 }
 
 function expandStartPos(text, startPos) {
+    if (startPos > 0) startPos--
     while (text[startPos] !== ' ' && startPos > 0) {
         startPos--
     }
@@ -556,7 +577,7 @@ function expandStartPos(text, startPos) {
 }
 
 function expandEndPos(text, endPos) {
-    while (text[endPos] !== ' ' && endPos < text.length - 1) {
+    while (text[endPos] !== ' ' && endPos < text.length) {
         endPos++
     }
     return endPos
@@ -619,6 +640,7 @@ function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
     case 'AllCaps':
+        if (text.length === 1) return text.toLowerCase()
         return text.split(' ').map(word => toSentenceCase(word)).join(' ')
     case 'Title Case':
         return text.split(' ').map((word, index) => {

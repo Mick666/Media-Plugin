@@ -158,7 +158,7 @@ chrome.commands.getAll(function(commands) {
         } else if (command.name === '3_changeCase') {
             createOption(command.shortcut, 'Changes the case of highlighted text', 'Case change')
         } else if (command.name ==='4_highlightBroadcast') {
-            createOption(command.shortcut, 'Highlights broadcast items which need a word recapitalised', 'Broadcast higlighter')
+            createOption(command.shortcut, 'Highlights possible syndications & broadcast items which need a word recapitalised', 'Syndication/Broadcast higlighter')
         } else if (command.name ==='5_highlightPreviewWords') {
             createOption(command.shortcut, 'Highlight possible mistakes in checking', 'Checking highlighter')
         } else if (command.name ==='l_addLink') {
