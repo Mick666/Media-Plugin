@@ -98,20 +98,31 @@ function greyOutAutomatedBroadcast() {
         } else {
             const headline = item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText.toLowerCase()
             const itemID = item.firstChild.innerText.slice(9)
+            const sectionName = item.children[1].innerText.slice(9)
             const publicationName = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText.replace(/ \(page [0-9]{1,2}\)/, '')
             const key = headline + ' ' + publicationName
 
-
             if (reclipObj[key]) {
                 if (reclipObj[key][1] < itemID) {
-                    reclipObj[key][0].style.opacity = '0.5'
-                    reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+                    console.log(reclipObj[key])
+                    if (reclipObj[key][2] && reclipObj[key][2].startsWith('Edition') && item.children[1] && !item.children[1].innerText.slice(9).startsWith('Edition')) {
+                        item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                        item.className += ' edited'
+                    } else {
+                        reclipObj[key][0].style.opacity = '0.5'
+                        reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+                    }
                 } else if (reclipObj[key][1] !== itemID) {
-                    item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-                    item.className += ' edited'
+                    if ((reclipObj[key][2] && !reclipObj[key][2].startsWith('Edition') && item.children[1] && item.children[1].innerText.slice(9).startsWith('Edition'))) {
+                        reclipObj[key][0].style.opacity = '0.5'
+                        reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+                    } else {
+                        item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                        item.className += ' edited'
+                    }
                 }
             } else {
-                reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
+                reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID, sectionName]
             }
         }
     })
@@ -120,7 +131,7 @@ function greyOutAutomatedBroadcast() {
 chrome.storage.local.get({ readmoreScroll: true }, function (data) {
     if (data.readmoreScroll) {
         document.addEventListener('mousedown', function (e) {
-            if (e.target.outerText === ' Read More') {
+            if (e.target.outerText === ' Read More' && e.target.parentElement.parentElement.parentElement.className === 'media-item-body media-item-details clearfix ng-scope') {
                 setTimeout(function () {
                     e.target.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].scrollIntoView(true)
                     window.scrollTo(window.scrollX, window.scrollY - 150)
@@ -136,16 +147,17 @@ function getPossibleSyndications() {
     let syndColors = ['red', 'gold', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
     let colorCount = 0
 
+    expandSectionHeadings()
     let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')].filter(item =>
         item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
         item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
     let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')].filter(item =>
         item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
         item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
-
     for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
         let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase()
         let headline = headlines[i].firstElementChild.innerText.toLowerCase()
+        console.log(headline)
         if (byline !== '') {
             if (bylineObj[byline]) {
                 bylineObj[byline].push(bylines[i])
@@ -195,13 +207,60 @@ function getPossibleSyndications() {
     }
 }
 
+function fixBylines() {
+    expandSectionHeadings()
+
+    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
+        .filter(item =>
+            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+        .filter(item => {
+            let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
+            return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline))
+        })
+
+    bylines.forEach(item => {
+        item.click()
+        let byline = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[1].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+        if (byline.value === 'Alice Man') {
+            byline.value = 'Alice Workman'
+        } else if (/.* Mc[a-z]|.* Mac[a-z]/.test(byline.value)) {
+            byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function(match, p1, p2) {
+                if (p1) return 'Mc' + p1.toUpperCase()
+                else return 'Mac' + p2.toUpperCase()
+            })
+        } else {
+            byline.value = byline.value.split(' ').map(word => toSentenceCase(word)).join(' ')
+        }
+
+        var textfieldUpdated = new Event('input', {
+            bubbles: true,
+            cancelable: true,
+        })
+
+        byline.dispatchEvent(textfieldUpdated)
+    })
+
+    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+        .filter(item =>
+            item.className.search('standardMode') > -1 &&
+        item.className.search('mat-expanded') > -1)
+
+    openedItems.forEach(item => {
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        item.parentElement.parentElement.firstElementChild.children[1].click()
+    })
+}
+
 function filterObj(obj) {
     return Object.keys(obj)
         .filter(key => obj[key].length > 1)
         .reduce( (res, key) => (res[key] = obj[key], res), {} )
 }
 
-document.addEventListener('mousedown', function (e) {
+document.addEventListener('mousedown', async function (e) {
+    let checkIfContentLoaded
+
     if (e.button !== 0 || e.ctrlKey || !e.target) return
     if (((e.target.className && e.target.className === 'coverage-anchor') ||
         (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
@@ -229,10 +288,26 @@ document.addEventListener('mousedown', function (e) {
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
+    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
+        let authorOption = await getAutoAuthorFixOption()
+        if (!authorOption) return
+
+        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText)) {
+            expandSectionHeadings()
+            checkIfContentLoaded = setInterval(checkContent, 250)
+        }
+    }
+
+    function checkContent() {
+        let MILs = [...document.getElementsByClassName('flex flex-1 flex-direction-row align-items-center justify-content-center')].filter(item => item.innerText.startsWith('Loading') || item.innerText.startsWith('Searching'))
+        if (MILs.length > 0) return
+
+        fixBylines()
+        clearInterval(checkIfContentLoaded)
     }
 })
 
-window.onload = function () {
+window.onload = async function () {
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
         if (document.getElementsByClassName('sorting dropdown').length > 0) {
@@ -244,6 +319,9 @@ window.onload = function () {
         document.title = 'Mediaportal Coverage'
     } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
+    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
+        const highlightOption = await getAutoHighlightOption()
+        if (highlightOption) checkingHighlights()
     }
 }
 
@@ -273,6 +351,7 @@ chrome.runtime.onMessage.addListener(
 )
 
 function fixPressSyndications() {
+    expandSectionHeadings()
     let items = [...document.querySelectorAll('mat-expansion-panel')]
         .filter(item => item.className.search('standardMode') > -1 &&
         item.firstElementChild.firstElementChild.firstElementChild
@@ -301,6 +380,11 @@ function fixPressSyndications() {
         item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
         item.parentElement.parentElement.firstElementChild.children[1].click()
     })
+}
+
+function expandSectionHeadings() {
+    let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
+    sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
 }
 
 
@@ -454,6 +538,20 @@ function getCheckingPropers() {
     return new Promise(options => {
         chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function (data) {
             options(data.copyPropers)
+        })
+    })
+}
+function getAutoHighlightOption() {
+    return new Promise(options => {
+        chrome.storage.local.get({ autoHighlight: true }, function (data) {
+            options(data.autoHighlight)
+        })
+    })
+}
+function getAutoAuthorFixOption() {
+    return new Promise(options => {
+        chrome.storage.local.get({ autoAuthorFix: true }, function (data) {
+            options(data.autoAuthorFix)
         })
     })
 }
