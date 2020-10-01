@@ -7,6 +7,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 window.onload = function() {
     chrome.storage.local.get({ missingContent: [] }, function (data) {
         console.log(data)
-        document.getElementById('missing').innerText = data.missingContent.join('\n')
+        if (data.missingContent.length === 0) return
+        let missingContent = data.missingContent.join(' | ').split(' | ')
+        missingContent.forEach(x => {
+            let para = document.createElement('P')
+            para.innerText = x
+            document.getElementById('missing').appendChild(para)
+        })
     })
 }
+

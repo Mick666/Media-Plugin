@@ -14,6 +14,7 @@ let checkingHasRun = false
 let lastHighlightedElement = null
 let reclipObj = {}
 let currentPortal = null
+let lastAddedContent = []
 
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
@@ -264,6 +265,7 @@ document.addEventListener('mousedown', async function (e) {
     let checkIfContentLoaded
 
     if (e.button !== 0 || e.ctrlKey || !e.target) return
+
     if (((e.target.className && e.target.className === 'coverage-anchor') ||
         (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
         (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
@@ -290,6 +292,11 @@ document.addEventListener('mousedown', async function (e) {
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
+        setTimeout(() => {
+            if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
+                createRPButton()
+            }
+        }, 1000)
     } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
         let authorOption = await getAutoAuthorFixOption()
         if (!authorOption) return
@@ -298,8 +305,17 @@ document.addEventListener('mousedown', async function (e) {
             expandSectionHeadings()
             checkIfContentLoaded = setInterval(checkContent, 250)
         }
-    }
-    else if (e.target.id === 'btnLogin') {
+    } else if (e.target.id === 'btnLogin') {
+        let lastReset = await getLastContentReset()
+        let currentDate = new Date()
+        let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
+        if (timeDif > 15) {
+            console.log('yep')
+            chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+            })
+            chrome.storage.local.set({ archivedContent: {} }, function() {
+            })
+        }
         if (chrome.extension.inIncognitoContext) {
             chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
             })
@@ -307,10 +323,12 @@ document.addEventListener('mousedown', async function (e) {
             chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
             })
         }
-    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope') {
+    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
         archiveSelectedContent()
-    } else if (e.target.innerText === 'Remove from Folder') {
+    } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Remove') {
         removeArchivedContent()
+    } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
+        createRPButton()
     }
 
     function checkContent() {
@@ -324,6 +342,7 @@ document.addEventListener('mousedown', async function (e) {
 
 window.onload = async function () {
     if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+    console.log(currentPortal)
 
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
@@ -336,7 +355,7 @@ window.onload = async function () {
         document.title = 'Mediaportal Coverage'
     } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
-        createRPButton()
+        if (document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
     } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
         const highlightOption = await getAutoHighlightOption()
         if (highlightOption) checkingHighlights()
@@ -543,60 +562,6 @@ function highlightHeadlines(headline, headlinesChecked) {
     headlinesChecked.push(headline.toLowerCase())
     return editedHeadline
 }
-
-
-function getCheckingCaps() {
-    return new Promise(options => {
-        chrome.storage.local.get({ copyCaps: defaultCheckCaps }, function (data) {
-            options(data.copyCaps)
-        })
-    })
-}
-function getCheckingPropers() {
-    return new Promise(options => {
-        chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function (data) {
-            options(data.copyPropers)
-        })
-    })
-}
-function getAutoHighlightOption() {
-    return new Promise(options => {
-        chrome.storage.local.get({ autoHighlight: true }, function (data) {
-            options(data.autoHighlight)
-        })
-    })
-}
-function getAutoAuthorFixOption() {
-    return new Promise(options => {
-        chrome.storage.local.get({ autoAuthorFix: true }, function (data) {
-            options(data.autoAuthorFix)
-        })
-    })
-}
-function getArchivedContent() {
-    return new Promise(options => {
-        chrome.storage.local.get({ archivedContent: {} }, function (data) {
-            options(data.archivedContent)
-        })
-    })
-}
-
-function getCurrentPortal() {
-    if (chrome.extension.inIncognitoContext) {
-        return new Promise(options => {
-            chrome.storage.local.get({ currentPortalIncog: {} }, function (data) {
-                options(data.currentPortalIncog)
-            })
-        })
-    } else {
-        return new Promise(options => {
-            chrome.storage.local.get({ currentPortalRegular: {} }, function (data) {
-                options(data.currentPortalRegular)
-            })
-        })
-    }
-}
-
 
 async function checkingHighlights() {
     if (!window.location.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) return
@@ -821,19 +786,26 @@ async function archiveSelectedContent() {
         return `${headline} | ${outletName}`
     })
 
+    let selectedFolders = [...document.getElementsByClassName('checkbox-custom')].filter(x => /^Brands|Competitors|Personal|Release Coverage|Spokespeople/.test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart())
+    if (selectedFolders.length === 0) return
+
     let archivedContent = await getArchivedContent()
+    console.log(archivedContent)
+
     if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
-    archivedContent[currentPortal].push(selectedItems)
+    archivedContent[currentPortal].push(selectedItems.filter(x => !archivedContent[currentPortal].includes(x)))
     archivedContent[currentPortal] = archivedContent[currentPortal].flat()
 
     console.log(archivedContent)
+
+    lastAddedContent = [window.location.href.toString(), selectedItems]
 
     chrome.storage.local.set({ archivedContent: archivedContent }, function() {
     })
 }
 
 async function removeArchivedContent() {
-    const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
+    let selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
@@ -843,11 +815,21 @@ async function removeArchivedContent() {
         return `${headline} | ${outletName}`
     })
     let archivedContent = await getArchivedContent()
+    console.log(archivedContent)
+
+    if (lastAddedContent[0] === window.location.href.toString()) {
+        selectedItems = selectedItems.filter(x => !lastAddedContent[1].includes(x))
+    }
+    console.log(selectedItems)
+
     if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
     archivedContent[currentPortal] = archivedContent[currentPortal].filter(x => !selectedItems.includes(x))
+
+    chrome.storage.local.set({ archivedContent: archivedContent }, function() {
+    })
 }
 
-async function checkedAddedContent() {
+async function checkAddedContent() {
     let RPItems = [...document.getElementsByClassName('media-item media-item-compact')].map(x => {
         const outletName = x.children[1].firstElementChild.children[3].firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         const headline = x.firstElementChild.children[1].innerText
@@ -879,11 +861,78 @@ async function checkedAddedContent() {
 function createRPButton() {
     let button = document.createElement('BUTTON')
     button.innerText = 'Check for missing content'
-    button.addEventListener('click', checkedAddedContent)
+    button.addEventListener('click', checkAddedContent)
     button.style.marginLeft = '19px'
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
+    let para = document.createElement('P')
+    para.innerText = 'Instructions:\n1: Do selections normally.\n2:Add all selections to RP when done, switch to Excel template\n3:If RP is grouped by anything, make sure each grouping\
+     is open. Scroll to the bottom to ensure all the content loads also.\n4:Click the above button, a new window will open if missing items are detected'
+    para.style.marginLeft = '19px'
+    para.style.marginTop = '10px'
+    para.style.marginRight = '10px'
+    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
 }
 
-// Add the content to RP, check the content there
-// Add online/print distinction for sites with same online/print outlet name
+// Check how this works with synd groupings of 10+
 
+
+function getCheckingCaps() {
+    return new Promise(options => {
+        chrome.storage.local.get({ copyCaps: defaultCheckCaps }, function (data) {
+            options(data.copyCaps)
+        })
+    })
+}
+function getCheckingPropers() {
+    return new Promise(options => {
+        chrome.storage.local.get({ copyPropers: defaultCheckProperNouns }, function (data) {
+            options(data.copyPropers)
+        })
+    })
+}
+function getAutoHighlightOption() {
+    return new Promise(options => {
+        chrome.storage.local.get({ autoHighlight: true }, function (data) {
+            options(data.autoHighlight)
+        })
+    })
+}
+function getAutoAuthorFixOption() {
+    return new Promise(options => {
+        chrome.storage.local.get({ autoAuthorFix: true }, function (data) {
+            options(data.autoAuthorFix)
+        })
+    })
+}
+function getArchivedContent() {
+    return new Promise(options => {
+        chrome.storage.local.get({ archivedContent: {} }, function (data) {
+            options(data.archivedContent)
+        })
+    })
+}
+
+function getCurrentPortal() {
+    if (chrome.extension.inIncognitoContext) {
+        return new Promise(options => {
+            chrome.storage.local.get({ currentPortalIncog: {} }, function (data) {
+                options(data.currentPortalIncog)
+            })
+        })
+    } else {
+        return new Promise(options => {
+            chrome.storage.local.get({ currentPortalRegular: {} }, function (data) {
+                options(data.currentPortalRegular)
+            })
+        })
+    }
+}
+
+function getLastContentReset() {
+    return new Promise(options => {
+        chrome.storage.local.get({ contentReset: 'September 30, 2020' }, function (data) {
+            console.log(data)
+            options(data.contentReset)
+        })
+    })
+}
