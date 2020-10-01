@@ -16,12 +16,140 @@ let reclipObj = {}
 let currentPortal = null
 let lastAddedContent = []
 
-chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
-    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
+
+document.addEventListener('mousedown', async function (e) {
+    let checkIfContentLoaded
+
+    if (e.button !== 0 || e.ctrlKey || !e.target) return
+
+    if (((e.target.className && e.target.className === 'coverage-anchor') ||
+        (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
+        (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
+        && / Brief| Folder/.test(e.target.parentElement.outerText)) {
+        if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
+        else document.title = e.target.outerText.trimEnd()
+        setTimeout(function () {
+            if (document.getElementsByClassName('sorting dropdown').length > 0) {
+                addHeadlineSortOptions()
+            }
+        }, 2000)
+    } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
         document.addEventListener('scroll', func)
-        listenerOptions = data.listenerOptions
+        document.title = 'Mediaportal Coverage'
+        seenIDs = []
+    } else if (e.target.nodeName === 'A' && e.target.outerText === ' Coverage') {
+        document.addEventListener('scroll', func)
+        document.title = 'Mediaportal Coverage'
+        seenIDs = []
+    } else if (e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
+        document.addEventListener('scroll', func)
+        document.title = 'Mediaportal Coverage'
+        seenIDs = []
+    } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
+        document.removeEventListener('scroll', func)
+        document.title = 'Report Builder'
+        setTimeout(() => {
+            if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
+                createRPButton()
+            }
+        }, 1000)
+    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
+        let authorOption = await getAutoAuthorFixOption()
+        if (!authorOption) return
+
+        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items')) {
+            expandSectionHeadings()
+            checkIfContentLoaded = setInterval(checkContent, 250)
+        }
+    } else if (e.target.id === 'btnLogin') {
+        let lastReset = await getLastContentReset()
+        let currentDate = new Date()
+        let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
+        if (timeDif > 15) {
+            chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+            })
+            chrome.storage.local.set({ archivedContent: {} }, function() {
+            })
+        }
+        if (chrome.extension.inIncognitoContext) {
+            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            })
+        } else {
+            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            })
+        }
+    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
+        archiveSelectedContent()
+    } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Remove') {
+        removeArchivedContent()
+    } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
+        createRPButton()
+    }
+
+    if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
+        console.log('testing that this worked')
+        setTimeout(createDBPlatformButtons, 500)
+    }
+
+    function checkContent() {
+        let MILs = [...document.getElementsByClassName('flex flex-1 flex-direction-row align-items-center justify-content-center')].filter(item => item.innerText.startsWith('Loading') || item.innerText.startsWith('Searching'))
+        if (MILs.length > 0) return
+
+        fixBylines()
+        clearInterval(checkIfContentLoaded)
     }
 })
+
+window.onload = async function () {
+    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+    console.log(currentPortal)
+
+    if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
+        document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
+        if (document.getElementsByClassName('sorting dropdown').length > 0) {
+            addHeadlineSortOptions()
+        }
+    } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
+        document.title = 'DB Platform'
+    } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
+        document.title = 'Mediaportal Coverage'
+    } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
+        document.title = 'Report Builder'
+        if (document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
+    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
+        const highlightOption = await getAutoHighlightOption()
+        if (highlightOption) checkingHighlights()
+    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
+        createDBPlatformButtons()
+    }
+}
+
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        if (request.action === 'getHighlightedText') {
+            sendResponse({ copy: window.getSelection().toString() })
+            lastHighlightedElement = document.getSelection().baseNode
+        } else if (request.action === 'highlight') {
+            highlightBroadcastItems()
+            getPossibleSyndications()
+        } else if (request.action === 'checkingWords' && !checkingHasRun) {
+            checkingHasRun = true
+            checkingHighlights()
+        } else if (request.action === 'copyIDs') {
+            let IDs = getAllIDs()
+            sendResponse({ copy: IDs })
+        } else if (request.action === 'changeCase') {
+            changeCase()
+        } else if (request.action === 'changeToSentenceCase') {
+            changeToSentenceCase()
+        } else if (request.action === 'setFieldValue') {
+            setFieldValue(request.data)
+        } else if (request.action === 'fixPressSyndications') {
+            fixPressSyndications()
+        }
+    }
+)
+
 function addHeadlineSortOptions() {
     document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
     document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Asc'))
@@ -107,7 +235,6 @@ function greyOutAutomatedBroadcast() {
 
             if (reclipObj[key]) {
                 if (reclipObj[key][1] < itemID) {
-                    console.log(reclipObj[key])
                     if (reclipObj[key][2] && reclipObj[key][2].startsWith('Edition') && item.children[1] && !item.children[1].innerText.slice(9).startsWith('Edition')) {
                         item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
                         item.className += ' edited'
@@ -160,7 +287,6 @@ function getPossibleSyndications() {
     for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
         let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase()
         let headline = headlines[i].firstElementChild.innerText.toLowerCase()
-        console.log(headline)
         if (byline !== '') {
             if (bylineObj[byline]) {
                 bylineObj[byline].push(bylines[i])
@@ -261,132 +387,6 @@ function filterObj(obj) {
         .reduce( (res, key) => (res[key] = obj[key], res), {} )
 }
 
-document.addEventListener('mousedown', async function (e) {
-    let checkIfContentLoaded
-
-    if (e.button !== 0 || e.ctrlKey || !e.target) return
-
-    if (((e.target.className && e.target.className === 'coverage-anchor') ||
-        (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
-        (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
-        && / Brief| Folder/.test(e.target.parentElement.outerText)) {
-        if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
-        else document.title = e.target.outerText.trimEnd()
-        setTimeout(function () {
-            if (document.getElementsByClassName('sorting dropdown').length > 0) {
-                addHeadlineSortOptions()
-            }
-        }, 2000)
-    } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
-        document.addEventListener('scroll', func)
-        document.title = 'Mediaportal Coverage'
-        seenIDs = []
-    } else if (e.target.nodeName === 'A' && e.target.outerText === ' Coverage') {
-        document.addEventListener('scroll', func)
-        document.title = 'Mediaportal Coverage'
-        seenIDs = []
-    } else if (e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
-        document.addEventListener('scroll', func)
-        document.title = 'Mediaportal Coverage'
-        seenIDs = []
-    } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
-        document.removeEventListener('scroll', func)
-        document.title = 'Report Builder'
-        setTimeout(() => {
-            if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
-                createRPButton()
-            }
-        }, 1000)
-    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
-        let authorOption = await getAutoAuthorFixOption()
-        if (!authorOption) return
-
-        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items')) {
-            expandSectionHeadings()
-            checkIfContentLoaded = setInterval(checkContent, 250)
-        }
-    } else if (e.target.id === 'btnLogin') {
-        let lastReset = await getLastContentReset()
-        let currentDate = new Date()
-        let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
-        if (timeDif > 15) {
-            console.log('yep')
-            chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
-            })
-            chrome.storage.local.set({ archivedContent: {} }, function() {
-            })
-        }
-        if (chrome.extension.inIncognitoContext) {
-            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
-            })
-        } else {
-            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
-            })
-        }
-    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
-        archiveSelectedContent()
-    } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Remove') {
-        removeArchivedContent()
-    } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
-        createRPButton()
-    }
-
-    function checkContent() {
-        let MILs = [...document.getElementsByClassName('flex flex-1 flex-direction-row align-items-center justify-content-center')].filter(item => item.innerText.startsWith('Loading') || item.innerText.startsWith('Searching'))
-        if (MILs.length > 0) return
-
-        fixBylines()
-        clearInterval(checkIfContentLoaded)
-    }
-})
-
-window.onload = async function () {
-    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
-    console.log(currentPortal)
-
-    if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
-        document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
-        if (document.getElementsByClassName('sorting dropdown').length > 0) {
-            addHeadlineSortOptions()
-        }
-    } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
-        document.title = 'DB Platform'
-    } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
-        document.title = 'Mediaportal Coverage'
-    } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
-        document.title = 'Report Builder'
-        if (document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
-    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
-        const highlightOption = await getAutoHighlightOption()
-        if (highlightOption) checkingHighlights()
-    }
-}
-
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        if (request.action === 'getHighlightedText') {
-            sendResponse({ copy: window.getSelection().toString() })
-            lastHighlightedElement = document.getSelection().baseNode
-        } else if (request.action === 'highlight') {
-            highlightBroadcastItems()
-        } else if (request.action === 'checkingWords' && !checkingHasRun) {
-            checkingHasRun = true
-            checkingHighlights()
-        } else if (request.action === 'copyIDs') {
-            let IDs = getAllIDs()
-            sendResponse({ copy: IDs })
-        } else if (request.action === 'changeCase') {
-            changeCase()
-        } else if (request.action === 'changeToSentenceCase') {
-            changeToSentenceCase()
-        } else if (request.action === 'setFieldValue') {
-            setFieldValue(request.data)
-        } else if (request.action === 'fixPressSyndications') {
-            fixPressSyndications()
-        }
-    }
-)
-
 function fixPressSyndications() {
     expandSectionHeadings()
     let items = [...document.querySelectorAll('mat-expansion-panel')]
@@ -437,7 +437,6 @@ function highlightBroadcastItems() {
                 })
         }
     }
-    getPossibleSyndications()
 }
 
 
@@ -776,6 +775,7 @@ function getCapitalisation(text) {
 }
 
 async function archiveSelectedContent() {
+
     const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
@@ -802,6 +802,7 @@ async function archiveSelectedContent() {
 
     chrome.storage.local.set({ archivedContent: archivedContent }, function() {
     })
+
 }
 
 async function removeArchivedContent() {
@@ -815,12 +816,10 @@ async function removeArchivedContent() {
         return `${headline} | ${outletName}`
     })
     let archivedContent = await getArchivedContent()
-    console.log(archivedContent)
 
     if (lastAddedContent[0] === window.location.href.toString()) {
         selectedItems = selectedItems.filter(x => !lastAddedContent[1].includes(x))
     }
-    console.log(selectedItems)
 
     if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
     archivedContent[currentPortal] = archivedContent[currentPortal].filter(x => !selectedItems.includes(x))
@@ -853,9 +852,6 @@ async function checkAddedContent() {
         }
 
     }
-
-
-    // console.log(RPItems.filter(x => !archivedContent[currentPortal].includes(x)))
 }
 
 function createRPButton() {
@@ -875,6 +871,42 @@ function createRPButton() {
 
 // Check how this works with synd groupings of 10+
 
+function createDBPlatformButtons() {
+    let label = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
+    label.innerText = 'PLUGIN'
+    let div = document.createElement('DIV')
+    div.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
+    div.style.padding = '10px'
+    div.appendChild(label)
+    let buttons = [['Highlight syndications', getPossibleSyndications], ['Fix bylines', fixBylines],
+        ['Highlight broadcast for recapping', highlightBroadcastItems], ['Fix print syndications', fixPressSyndications]]
+
+    for (let i = 0; i < buttons.length; i++) {
+        div.appendChild(createButton(buttons[i][0], buttons[i][1]))
+    }
+
+    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(div)
+}
+
+function createButton(innerText, onClickFunc) {
+    let btn = document.createElement('button')
+
+    btn.setAttribute( 'style', 'font-size: 14px !important;' )
+    btn.className = 'mp-page-thin-button addButton mat-stroked-button mat-primary _mat-animation-noopable'
+    btn.style.marginTop = '10px'
+
+    btn.innerText = innerText
+    btn.addEventListener('click', onClickFunc)
+    return btn
+}
+
+
+chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
+    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
+        document.addEventListener('scroll', func)
+        listenerOptions = data.listenerOptions
+    }
+})
 
 function getCheckingCaps() {
     return new Promise(options => {
@@ -931,7 +963,6 @@ function getCurrentPortal() {
 function getLastContentReset() {
     return new Promise(options => {
         chrome.storage.local.get({ contentReset: 'September 30, 2020' }, function (data) {
-            console.log(data)
             options(data.contentReset)
         })
     })
