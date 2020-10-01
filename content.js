@@ -13,6 +13,7 @@ let listenerOptions = [true, true, true]
 let checkingHasRun = false
 let lastHighlightedElement = null
 let reclipObj = {}
+let currentPortal = null
 
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
@@ -30,6 +31,7 @@ function createDivider() {
     newList.className = 'divider'
     return newList
 }
+
 function createNewListItem(direction) {
     let newListItem = document.createElement('li')
     newListItem.className = 'ng-scope'
@@ -292,10 +294,23 @@ document.addEventListener('mousedown', async function (e) {
         let authorOption = await getAutoAuthorFixOption()
         if (!authorOption) return
 
-        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText)) {
+        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items')) {
             expandSectionHeadings()
             checkIfContentLoaded = setInterval(checkContent, 250)
         }
+    }
+    else if (e.target.id === 'btnLogin') {
+        if (chrome.extension.inIncognitoContext) {
+            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            })
+        } else {
+            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            })
+        }
+    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope') {
+        archiveSelectedContent()
+    } else if (e.target.innerText === 'Remove from Folder') {
+        removeArchivedContent()
     }
 
     function checkContent() {
@@ -308,6 +323,8 @@ document.addEventListener('mousedown', async function (e) {
 })
 
 window.onload = async function () {
+    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
         if (document.getElementsByClassName('sorting dropdown').length > 0) {
@@ -319,6 +336,7 @@ window.onload = async function () {
         document.title = 'Mediaportal Coverage'
     } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
+        createRPButton()
     } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
         const highlightOption = await getAutoHighlightOption()
         if (highlightOption) checkingHighlights()
@@ -555,6 +573,29 @@ function getAutoAuthorFixOption() {
         })
     })
 }
+function getArchivedContent() {
+    return new Promise(options => {
+        chrome.storage.local.get({ archivedContent: {} }, function (data) {
+            options(data.archivedContent)
+        })
+    })
+}
+
+function getCurrentPortal() {
+    if (chrome.extension.inIncognitoContext) {
+        return new Promise(options => {
+            chrome.storage.local.get({ currentPortalIncog: {} }, function (data) {
+                options(data.currentPortalIncog)
+            })
+        })
+    } else {
+        return new Promise(options => {
+            chrome.storage.local.get({ currentPortalRegular: {} }, function (data) {
+                options(data.currentPortalRegular)
+            })
+        })
+    }
+}
 
 
 async function checkingHighlights() {
@@ -741,10 +782,13 @@ function changeSelectedText(text) {
         if (text.length === 1) return text.toLowerCase()
         return text.split(' ').map(word => toSentenceCase(word)).join(' ')
     case 'Title Case':
-        return text.split(' ').map((word, index) => {
-            if (index === 0) return toSentenceCase(word)
-            else return word.toLowerCase()
-        }).join(' ')
+        return text
+            .split(' ')
+            .map((word, index) => {
+                if (index === 0) return toSentenceCase(word)
+                else return word.toLowerCase()
+            })
+            .join(' ')
     case 'Sentence case':
         return text.toLowerCase()
     case 'lower case':
@@ -766,5 +810,80 @@ function getCapitalisation(text) {
     return 'lower case'
 }
 
+async function archiveSelectedContent() {
+    const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
+        const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
+        let headline
+        if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
+            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText
+        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText
 
+        return `${headline} | ${outletName}`
+    })
+
+    let archivedContent = await getArchivedContent()
+    if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
+    archivedContent[currentPortal].push(selectedItems)
+    archivedContent[currentPortal] = archivedContent[currentPortal].flat()
+
+    console.log(archivedContent)
+
+    chrome.storage.local.set({ archivedContent: archivedContent }, function() {
+    })
+}
+
+async function removeArchivedContent() {
+    const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
+        const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
+        let headline
+        if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
+            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText
+        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText
+
+        return `${headline} | ${outletName}`
+    })
+    let archivedContent = await getArchivedContent()
+    if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
+    archivedContent[currentPortal] = archivedContent[currentPortal].filter(x => !selectedItems.includes(x))
+}
+
+async function checkedAddedContent() {
+    let RPItems = [...document.getElementsByClassName('media-item media-item-compact')].map(x => {
+        const outletName = x.children[1].firstElementChild.children[3].firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
+        const headline = x.firstElementChild.children[1].innerText
+        return `${headline} | ${outletName}`
+    })
+    console.log(RPItems)
+    console.log(currentPortal)
+    let archivedContent = await getArchivedContent()
+    console.log(archivedContent)
+
+    if (archivedContent[currentPortal]) {
+        let missingItems = [...new Set(archivedContent[currentPortal].filter(x => !RPItems.includes(x)))]
+        if (missingItems.length > 0) {
+            chrome.runtime.sendMessage({
+                action: 'createWindow',
+                url: 'missingContent.html',
+                missingItems: missingItems
+            })
+        } else {
+            alert('No missing items detected!*\n\n\n*We hope anyway')
+        }
+
+    }
+
+
+    // console.log(RPItems.filter(x => !archivedContent[currentPortal].includes(x)))
+}
+
+function createRPButton() {
+    let button = document.createElement('BUTTON')
+    button.innerText = 'Check for missing content'
+    button.addEventListener('click', checkedAddedContent)
+    button.style.marginLeft = '19px'
+    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
+}
+
+// Add the content to RP, check the content there
+// Add online/print distinction for sites with same online/print outlet name
 
