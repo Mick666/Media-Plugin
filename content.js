@@ -16,6 +16,34 @@ let reclipObj = {}
 let currentPortal = null
 let lastAddedContent = []
 
+window.onload = async function () {
+    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+    console.log(currentPortal)
+
+    if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
+        document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
+        if (document.getElementsByClassName('sorting dropdown').length > 0) {
+            addHeadlineSortOptions()
+        }
+    } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
+        document.title = 'DB Platform'
+    } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
+        document.title = 'Mediaportal Coverage'
+    } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
+        document.title = 'Report Builder'
+        if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
+        else {
+            setTimeout((() => {
+                if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
+            }), 500)
+        }
+    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
+        const highlightOption = await getAutoHighlightOption()
+        if (highlightOption) checkingHighlights()
+    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
+        createDBPlatformButtons()
+    }
+}
 
 document.addEventListener('mousedown', async function (e) {
     let checkIfContentLoaded
@@ -49,10 +77,12 @@ document.addEventListener('mousedown', async function (e) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
         setTimeout(() => {
-            if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
+            if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
                 createRPButton()
+            } else {
+                console.log(document.getElementsByClassName('dropdown-display'))
             }
-        }, 1000)
+        }, 2000)
     } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
         let authorOption = await getAutoAuthorFixOption()
         if (!authorOption) return
@@ -82,12 +112,12 @@ document.addEventListener('mousedown', async function (e) {
         archiveSelectedContent()
     } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Remove') {
         removeArchivedContent()
-    } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
-        createRPButton()
+    } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display').length > 0
+        && e.target.parentElement && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
+        setTimeout(createRPButton, 500)
     }
 
-    if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
-        console.log('testing that this worked')
+    if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
         setTimeout(createDBPlatformButtons, 500)
     }
 
@@ -100,28 +130,27 @@ document.addEventListener('mousedown', async function (e) {
     }
 })
 
-window.onload = async function () {
-    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
-    console.log(currentPortal)
-
-    if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
-        document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
-        if (document.getElementsByClassName('sorting dropdown').length > 0) {
-            addHeadlineSortOptions()
+if (window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
+    document.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            let lastReset = await getLastContentReset()
+            let currentDate = new Date()
+            let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
+            if (timeDif > 15) {
+                chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+                })
+                chrome.storage.local.set({ archivedContent: {} }, function() {
+                })
+            }
+            if (chrome.extension.inIncognitoContext) {
+                chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+                })
+            } else {
+                chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+                })
+            }
         }
-    } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
-        document.title = 'DB Platform'
-    } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
-        document.title = 'Mediaportal Coverage'
-    } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
-        document.title = 'Report Builder'
-        if (document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
-    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
-        const highlightOption = await getAutoHighlightOption()
-        if (highlightOption) checkingHighlights()
-    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
-        createDBPlatformButtons()
-    }
+    })
 }
 
 chrome.runtime.onMessage.addListener(
@@ -285,7 +314,7 @@ function getPossibleSyndications() {
         item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
         item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
     for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
-        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase()
+        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase().replace(/ and /g, '')
         let headline = headlines[i].firstElementChild.innerText.toLowerCase()
         if (byline !== '') {
             if (bylineObj[byline]) {
@@ -422,6 +451,15 @@ function fixPressSyndications() {
 function expandSectionHeadings() {
     let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
     sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
+
+    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+        .filter(item =>
+            item.className.search('standardMode') > -1 &&
+        item.className.search('mat-expanded') > -1)
+
+    openedItems.forEach(item => {
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+    })
 }
 
 
@@ -780,7 +818,7 @@ async function archiveSelectedContent() {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
-            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText
+            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(30)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText
 
         return `${headline} | ${outletName}`
@@ -810,8 +848,8 @@ async function removeArchivedContent() {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
-            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText
-        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText
+            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
+        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
 
         return `${headline} | ${outletName}`
     })
@@ -831,7 +869,7 @@ async function removeArchivedContent() {
 async function checkAddedContent() {
     let RPItems = [...document.getElementsByClassName('media-item media-item-compact')].map(x => {
         const outletName = x.children[1].firstElementChild.children[3].firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
-        const headline = x.firstElementChild.children[1].innerText
+        const headline = x.firstElementChild.children[1].innerText.slice(0, 90)
         return `${headline} | ${outletName}`
     })
     console.log(RPItems)
@@ -840,7 +878,8 @@ async function checkAddedContent() {
     console.log(archivedContent)
 
     if (archivedContent[currentPortal]) {
-        let missingItems = [...new Set(archivedContent[currentPortal].filter(x => !RPItems.includes(x)))]
+        let missingItems = [...new Set(archivedContent[currentPortal])].filter(x => RPItems.indexOf(x) === -1)
+        console.log(missingItems)
         if (missingItems.length > 0) {
             chrome.runtime.sendMessage({
                 action: 'createWindow',
@@ -859,25 +898,31 @@ function createRPButton() {
     button.innerText = 'Check for missing content'
     button.addEventListener('click', checkAddedContent)
     button.style.marginLeft = '19px'
+    button.style.color = 'black'
+    button.style.borderColor = 'black'
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
     let para = document.createElement('P')
-    para.innerText = 'Instructions:\n1: Do selections normally.\n2:Add all selections to RP when done, switch to Excel template\n3:If RP is grouped by anything, make sure each grouping\
-     is open. Scroll to the bottom to ensure all the content loads also.\n4:Click the above button, a new window will open if missing items are detected'
+    para.innerText = 'Instructions:\n1: Do selections normally.\n2: Add all selections to RP when done, switch to Excel template\n3: If RP is grouped by anything, make sure each grouping\
+     is open. Scroll to the bottom to ensure all the content loads also.\n4: Click the above button, a new window will open if missing items are detected.\n\n NB: Some syndications may incorrectly appear\
+      as missing, this is a known bug'
     para.style.marginLeft = '19px'
     para.style.marginTop = '10px'
     para.style.marginRight = '10px'
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
 }
 
-// Check how this works with synd groupings of 10+
-
 function createDBPlatformButtons() {
+    let para = document.createElement('P')
+    para.innerText = 'NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.'
+
     let label = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
     label.innerText = 'PLUGIN'
+
     let div = document.createElement('DIV')
     div.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
     div.style.padding = '10px'
     div.appendChild(label)
+    div.appendChild(para)
     let buttons = [['Highlight syndications', getPossibleSyndications], ['Fix bylines', fixBylines],
         ['Highlight broadcast for recapping', highlightBroadcastItems], ['Fix print syndications', fixPressSyndications]]
 
