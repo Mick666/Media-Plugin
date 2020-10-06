@@ -46,7 +46,6 @@ window.onload = async function () {
 }
 
 document.addEventListener('mousedown', async function (e) {
-    let checkIfContentLoaded
 
     if (e.button !== 0 || e.ctrlKey || !e.target) return
 
@@ -83,17 +82,10 @@ document.addEventListener('mousedown', async function (e) {
                 console.log(document.getElementsByClassName('dropdown-display'))
             }
         }, 2000)
-    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings')) {
-        let authorOption = await getAutoAuthorFixOption()
-        if (!authorOption) return
-
-        if (e.target.innerText === 'Ok' && (e.target.parentElement.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items' || e.target.parentElement.parentElement.firstElementChild.innerText === 'Get Media Items')) {
-            expandSectionHeadings()
-            checkIfContentLoaded = setInterval(checkContent, 250)
-        }
     } else if (e.target.id === 'btnLogin') {
         let lastReset = await getLastContentReset()
         let currentDate = new Date()
+        console.log(lastReset, currentDate)
         let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
         if (timeDif > 15) {
             chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
@@ -121,16 +113,9 @@ document.addEventListener('mousedown', async function (e) {
         setTimeout(createDBPlatformButtons, 500)
     }
 
-    function checkContent() {
-        let MILs = [...document.getElementsByClassName('flex flex-1 flex-direction-row align-items-center justify-content-center')].filter(item => item.innerText.startsWith('Loading') || item.innerText.startsWith('Searching'))
-        if (MILs.length > 0) return
-
-        fixBylines()
-        clearInterval(checkIfContentLoaded)
-    }
 })
-
-if (window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
+console.log(window.location.href.toString())
+if (window.location.href.toString() === 'https://www.mediaportal.com/' || window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
     document.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             let lastReset = await getLastContentReset()
@@ -818,8 +803,8 @@ async function archiveSelectedContent() {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
-            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(30)
-        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText
+            headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
+        } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
 
         return `${headline} | ${outletName}`
     })
@@ -861,6 +846,7 @@ async function removeArchivedContent() {
 
     if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
     archivedContent[currentPortal] = archivedContent[currentPortal].filter(x => !selectedItems.includes(x))
+    console.log(archivedContent)
 
     chrome.storage.local.set({ archivedContent: archivedContent }, function() {
     })
@@ -971,13 +957,6 @@ function getAutoHighlightOption() {
     return new Promise(options => {
         chrome.storage.local.get({ autoHighlight: true }, function (data) {
             options(data.autoHighlight)
-        })
-    })
-}
-function getAutoAuthorFixOption() {
-    return new Promise(options => {
-        chrome.storage.local.get({ autoAuthorFix: true }, function (data) {
-            options(data.autoAuthorFix)
         })
     })
 }
