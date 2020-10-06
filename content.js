@@ -39,22 +39,34 @@ window.onload = async function () {
         }
     } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
         const highlightOption = await getAutoHighlightOption()
-        if (highlightOption) checkingHighlights()
+        if (highlightOption) setTimeout(checkingHighlights, 1000)
     } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
-        createDBPlatformButtons()
+        console.log()
+        if (document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset').length === 0) {
+            setTimeout(createDBPlatformButtons, 2000)
+        } else {
+            createDBPlatformButtons()
+            if (document.getElementsByClassName('mat-slide-toggle-label').length > 0) document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions)
+            else setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
+        }
     }
 }
 
 document.addEventListener('mousedown', async function (e) {
-
     if (e.button !== 0 || e.ctrlKey || !e.target) return
 
     if (((e.target.className && e.target.className === 'coverage-anchor') ||
         (e.target.parentElement && (e.target.parentElement.className === 'coverage-anchor' || e.target.parentElement.className === 'item-primary-panel')) ||
         (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
-        && / Brief| Folder/.test(e.target.parentElement.outerText)) {
+        && / Brief| Folder/.test(e.target.parentElement.outerText) ||
+        e.target.parentElement && (e.target.parentElement.className === 'item-unread-count' || e.target.parentElement.parentElement.className === 'item-unread-count')) {
+        console.log('testing for mousdown')
+
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
+        else if (e.target.nodeName === 'A' && e.target.children[1]) document.title = e.target.children[1].innerText
+        else if (e.target.nodeName === 'SPAN' && (e.target.className === 'unread ng-scope' || e.target.className === 'item-type ng-binding')) document.title = e.target.parentElement.parentElement.parentElement.children[1].innerText
         else document.title = e.target.outerText.trimEnd()
+
         setTimeout(function () {
             if (document.getElementsByClassName('sorting dropdown').length > 0) {
                 addHeadlineSortOptions()
@@ -111,10 +123,11 @@ document.addEventListener('mousedown', async function (e) {
 
     if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
         setTimeout(createDBPlatformButtons, 500)
+        setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
     }
 
 })
-console.log(window.location.href.toString())
+
 if (window.location.href.toString() === 'https://www.mediaportal.com/' || window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
     document.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
@@ -227,8 +240,9 @@ function func() {
 
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
-        .filter(item => !item.className.includes('edited') &&
-            item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}')
+        .filter(item => !item.className.includes('edited')
+        && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
+        && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
 
     items.forEach(item => {
         if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')) {
@@ -290,109 +304,130 @@ function getPossibleSyndications() {
     let bylineObj = {}
     let syndColors = ['red', 'gold', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
     let colorCount = 0
-
-    expandSectionHeadings()
-    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')].filter(item =>
-        item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
-        item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
-    let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')].filter(item =>
-        item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
-        item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
-    for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
-        let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase().replace(/ and /g, '')
-        let headline = headlines[i].firstElementChild.innerText.toLowerCase()
-        if (byline !== '') {
-            if (bylineObj[byline]) {
-                bylineObj[byline].push(bylines[i])
-            } else {
-                bylineObj[byline] = [bylines[i]]
-            }
-        }
-
-        if (headlineObj[headline]) {
-            headlineObj[headline].push(headlines[i])
-        } else {
-            headlineObj[headline] = [headlines[i]]
-        }
-    }
-    bylineObj = filterObj(bylineObj)
-    headlineObj = filterObj(headlineObj)
-
-    for (let key in bylineObj) {
-        for (let i = 0; i < bylineObj[key].length; i++) {
-            const bylineParent = bylineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
-            bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
-            bylineParent.className += 'syndication-tagged'
-        }
-        if (colorCount + 1 === syndColors.length) colorCount = 0
-        else colorCount++
-    }
-    for (let key in headlineObj) {
-        for (let i = 0; i < headlineObj[key].length; i++) {
-            const headlineParent = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
-
-            if (headlineParent.className.search('syndication-tagged') > -1) {
-                let color = headlineParent.style.borderColor
-                for (let j = i; j < headlineObj[key].length; j++) {
-                    const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
-                    headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 2px;` )
+    document.getElementById('syndHighlightBtn').innerText = 'Tool running...'
+    try {
+        expandSectionHeadings()
+        let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')].filter(item =>
+            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild &&
+            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+        let headlines = [...document.getElementsByClassName('headline mp-page-ellipsis headerRow shown')].filter(item =>
+            item.parentElement.children[1].children[1].children[2].firstElementChild &&
+            item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+            item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+        for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
+            let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase().replace(/ and /g, '')
+            let headline = headlines[i].firstElementChild.innerText.toLowerCase()
+            if (byline !== '') {
+                if (bylineObj[byline]) {
+                    bylineObj[byline].push(bylines[i])
+                } else {
+                    bylineObj[byline] = [bylines[i]]
                 }
-                if (colorCount - 1 < 0) colorCount = syndColors.length - 1
-                else colorCount--
-                break
+            }
+
+            if (headlineObj[headline]) {
+                headlineObj[headline].push(headlines[i])
             } else {
-                headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
-                headlineParent.className += 'syndication-tagged'
+                headlineObj[headline] = [headlines[i]]
             }
         }
-        if (colorCount + 1 === syndColors.length) colorCount = 0
-        else colorCount++
+        bylineObj = filterObj(bylineObj)
+        headlineObj = filterObj(headlineObj)
+
+        for (let key in bylineObj) {
+            for (let i = 0; i < bylineObj[key].length; i++) {
+                const bylineParent = bylineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
+                bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+                bylineParent.className += 'syndication-tagged'
+            }
+            if (colorCount + 1 === syndColors.length) colorCount = 0
+            else colorCount++
+        }
+        for (let key in headlineObj) {
+            for (let i = 0; i < headlineObj[key].length; i++) {
+                const headlineParent = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
+
+                if (headlineParent.className.search('syndication-tagged') > -1) {
+                    let color = headlineParent.style.borderColor
+                    for (let j = i; j < headlineObj[key].length; j++) {
+                        const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
+                        headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 2px;` )
+                    }
+                    if (colorCount - 1 < 0) colorCount = syndColors.length - 1
+                    else colorCount--
+                    break
+                } else {
+                    headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+                    headlineParent.className += 'syndication-tagged'
+                }
+            }
+            if (colorCount + 1 === syndColors.length) colorCount = 0
+            else colorCount++
+        }
+        document.getElementById('syndHighlightBtn').innerText = 'Syndications highlighted!'
+        setTimeout(() => document.getElementById('syndHighlightBtn').innerText = 'Highlight syndications', 2000)
+    } catch (error) {
+        console.log(error)
+        document.getElementById('syndHighlightBtn').innerText = 'Error encountered running tool'
     }
 }
 
 function fixBylines() {
-    expandSectionHeadings()
 
-    let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
-        .filter(item =>
-            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
-            item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
-        .filter(item => {
-            let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
-            return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline))
-        })
+    try {
+        document.getElementById('bylineFixBtn').innerText = 'Tool running...'
+        expandSectionHeadings()
 
-    bylines.forEach(item => {
-        item.click()
-        let byline = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[1].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
-        if (byline.value === 'Alice Man') {
-            byline.value = 'Alice Workman'
-        } else if (/.* Mc[a-z]|.* Mac[a-z]/.test(byline.value)) {
-            byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function(match, p1, p2) {
-                if (p1) return 'Mc' + p1.toUpperCase()
-                else return 'Mac' + p2.toUpperCase()
+        let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
+            .filter(item =>
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+            .filter(item => {
+                let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
+                return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline))
             })
-        } else {
-            byline.value = byline.value.split(' ').map(word => toSentenceCase(word)).join(' ')
-        }
 
-        var textfieldUpdated = new Event('input', {
-            bubbles: true,
-            cancelable: true,
+        bylines.forEach(item => {
+            item.click()
+            let byline = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[1].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            if (byline.value === 'Alice Man') {
+                byline.value = 'Alice Workman'
+            } else if (/.* Mc[a-z]|.* Mac[a-z]/.test(byline.value)) {
+                byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function(match, p1, p2) {
+                    if (p1) return 'Mc' + p1.toUpperCase()
+                    else return 'Mac' + p2.toUpperCase()
+                })
+            } else {
+                byline.value = byline.value.split(' ').map(word => toSentenceCase(word)).join(' ')
+            }
+
+            var textfieldUpdated = new Event('input', {
+                bubbles: true,
+                cancelable: true,
+            })
+
+            byline.dispatchEvent(textfieldUpdated)
         })
 
-        byline.dispatchEvent(textfieldUpdated)
-    })
+        let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+            .filter(item =>
+                item.className.search('standardMode') > -1 &&
+            item.className.search('mat-expanded') > -1)
 
-    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-        .filter(item =>
-            item.className.search('standardMode') > -1 &&
-        item.className.search('mat-expanded') > -1)
+        openedItems.forEach(item => {
+            item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+            item.parentElement.parentElement.firstElementChild.children[1].click()
+        })
 
-    openedItems.forEach(item => {
-        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        item.parentElement.parentElement.firstElementChild.children[1].click()
-    })
+        document.getElementById('bylineFixBtn').innerText = 'Bylines fixed!'
+        setTimeout(() => document.getElementById('bylineFixBtn').innerText = 'Fix bylines', 2000)
+    } catch (error) {
+        console.log(error)
+        document.getElementById('bylineFixBtn').innerText = 'Error encountered running tool'
+    }
+
 }
 
 function filterObj(obj) {
@@ -402,35 +437,45 @@ function filterObj(obj) {
 }
 
 function fixPressSyndications() {
-    expandSectionHeadings()
-    let items = [...document.querySelectorAll('mat-expansion-panel')]
-        .filter(item => item.className.search('standardMode') > -1 &&
-        item.firstElementChild.firstElementChild.firstElementChild
-            .children[1].children[1].children[2].firstElementChild
-            .className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted')
+    try {
+        document.getElementById('fixPressBtn').innerText = 'Tool running...'
+        expandSectionHeadings()
+        let items = [...document.querySelectorAll('mat-expansion-panel')]
+            .filter(item => item.className.search('standardMode') > -1 &&
+            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
+            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild
+                .className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted')
 
-    items.forEach(item => {
-        if (item.children[1].firstElementChild.innerText === '') {
+        items.forEach(item => {
+            if (item.children[1].firstElementChild.innerText === '') {
+                item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+            }
+            if (item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].childElementCount !== 3) return
+            const SyndList = item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].children[2].children[2]
+            if (SyndList.childElementCount === 0) return
+            else if ((/\(Online\)/).test(SyndList.firstElementChild.innerText)) return
+
+            item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3]
+                .children[1].children[2].children[2].children[0].firstElementChild.children[2].firstElementChild.children[1].firstElementChild.click() // Make parent
+        })
+
+        let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+            .filter(item =>
+                item.className.search('standardMode') > -1 &&
+                item.className.search('mat-expanded') > -1)
+
+        openedItems.forEach(item => {
             item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        }
-        if (item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].childElementCount !== 3) return
-        const SyndList = item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].children[1].children[2].children[2]
-        if (SyndList.childElementCount === 0) return
-        else if ((/\(Online\)/).test(SyndList.firstElementChild.innerText)) return
+            item.parentElement.parentElement.firstElementChild.children[1].click()
+        })
 
-        item.children[1].firstElementChild.firstElementChild.firstElementChild.children[3]
-            .children[1].children[2].children[2].children[0].firstElementChild.children[2].firstElementChild.children[1].firstElementChild.click() // Make parent
-    })
+        document.getElementById('fixPressBtn').innerText = 'Press syndications fixed!'
+        setTimeout(() => document.getElementById('fixPressBtn').innerText = 'Fix press syndications', 2000)
+    } catch (error) {
+        console.log(error)
+        document.getElementById('fixPressBtn').innerText = 'Error encountered running tool'
+    }
 
-    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-        .filter(item =>
-            item.className.search('standardMode') > -1 &&
-            item.className.search('mat-expanded') > -1)
-
-    openedItems.forEach(item => {
-        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        item.parentElement.parentElement.firstElementChild.children[1].click()
-    })
 }
 
 function expandSectionHeadings() {
@@ -449,17 +494,27 @@ function expandSectionHeadings() {
 
 
 function highlightBroadcastItems() {
-    const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')
-    for (let i = 0; i < headlines.length; i++) {
-        if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText)
-            && (headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-volume-up' ||
-                headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
-            headlines[i].firstChild.innerHTML = headlines[i].firstChild.innerHTML
-                .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function (match) {
-                    return '<span style=\'background-color:#FDFF47;\'>' + match + '</span>'
-                })
+    try {
+        document.getElementById('highlightBroadcastBtn').innerText = 'Tool running...'
+        const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')
+        for (let i = 0; i < headlines.length; i++) {
+            if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText)
+                && (headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-volume-up' ||
+                    headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
+                headlines[i].firstChild.innerHTML = headlines[i].firstChild.innerHTML
+                    .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function (match) {
+                        return '<span style=\'background-color:#FDFF47;\'>' + match + '</span>'
+                    })
+            }
         }
+
+        document.getElementById('highlightBroadcastBtn').innerText = 'Broadcast highlighted!'
+        setTimeout(() => document.getElementById('highlightBroadcastBtn').innerText = 'Highlight broadcast for recapping', 2000)
+    } catch (error) {
+        console.log(error)
+        document.getElementById('highlightBroadcastBtn').innerText = 'Error encountered running tool'
     }
+
 }
 
 
@@ -880,12 +935,14 @@ async function checkAddedContent() {
 }
 
 function createRPButton() {
+    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
     let button = document.createElement('BUTTON')
     button.innerText = 'Check for missing content'
     button.addEventListener('click', checkAddedContent)
     button.style.marginLeft = '19px'
     button.style.color = 'black'
     button.style.borderColor = 'black'
+    button.className += 'AVeryLongClassNameNoOneWillEverUse'
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
     let para = document.createElement('P')
     para.innerText = 'Instructions:\n1: Do selections normally.\n2: Add all selections to RP when done, switch to Excel template\n3: If RP is grouped by anything, make sure each grouping\
@@ -895,6 +952,31 @@ function createRPButton() {
     para.style.marginTop = '10px'
     para.style.marginRight = '10px'
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
+}
+
+function improveAccessibiltyOptions() {
+    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
+    let parentEle = document.getElementsByClassName('flex flex1 flex-direction-row align-items-center justify-content-space-between heading')[0].firstElementChild
+    let button = document.createElement('BUTTON')
+    button.innerText = 'MERGE ITEMS'
+    button.style.marginLeft = '15px'
+    button.className = 'mat-stroked-button mat-primary _mat-animation-noopable AVeryLongClassNameNoOneWillEverUse'
+    button.addEventListener('mousedown', () => {
+        if (document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted').length > 0) {
+            document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted')[0].firstElementChild.click()
+        }
+    })
+    let secondButton = document.createElement('BUTTON')
+    secondButton.innerText = 'DELETE ITEMS'
+    secondButton.style.marginLeft = '15px'
+    secondButton.className = 'mat-stroked-button mat-primary _mat-animation-noopable'
+    secondButton.addEventListener('mousedown', () => {
+        if (document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable').length > 0) {
+            document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable')[0].firstElementChild.click()
+        }
+    })
+    parentEle.appendChild(button)
+    parentEle.appendChild(secondButton)
 }
 
 function createDBPlatformButtons() {
@@ -909,21 +991,22 @@ function createDBPlatformButtons() {
     div.style.padding = '10px'
     div.appendChild(label)
     div.appendChild(para)
-    let buttons = [['Highlight syndications', getPossibleSyndications], ['Fix bylines', fixBylines],
-        ['Highlight broadcast for recapping', highlightBroadcastItems], ['Fix print syndications', fixPressSyndications]]
+    let buttons = [['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'],  ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
+        ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
     for (let i = 0; i < buttons.length; i++) {
-        div.appendChild(createButton(buttons[i][0], buttons[i][1]))
+        div.appendChild(createButton(buttons[i][0], buttons[i][1], buttons[i][2]))
     }
 
     document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(div)
 }
 
-function createButton(innerText, onClickFunc) {
+function createButton(innerText, onClickFunc, id) {
     let btn = document.createElement('button')
 
     btn.setAttribute( 'style', 'font-size: 14px !important;' )
     btn.className = 'mp-page-thin-button addButton mat-stroked-button mat-primary _mat-animation-noopable'
+    btn.id = id
     btn.style.marginTop = '10px'
 
     btn.innerText = innerText
