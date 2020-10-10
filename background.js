@@ -27,14 +27,12 @@ chrome.commands.onCommand.addListener(function (command) {
         chrome.storage.local.get({ decap: true }, function (result) {
             getHighlightedText(command, result.decap)
         })
-    } else if (command === '4_highlightBroadcast') {
-        highlightBroadcast()
-    } else if (command === '5_highlightPreviewWords') {
-        checkingWords()
-    } else if (command === 'd_copyIDs') {
-        getAllIDs()
     } else if (command === 'l_addLink') {
         addLink()
+    } else if (command === 'z_mergeHotkey') {
+        platformHotkey('merge')
+    } else if (command === 'z_deleteHotkey') {
+        platformHotkey('delete')
     } else if (command === 'l_openLinks') {
         openLinks()
     } else if (command === 'c1_saveID') {
@@ -47,9 +45,7 @@ chrome.commands.onCommand.addListener(function (command) {
         changeCase()
     }  else if (command === '3_toSentenceCase') {
         changeToSentenceCase()
-    }   else if (command === '30_fixPressSyndications') {
-        fixPressSyndications()
-    } else if (command === 'c2_pasteEntireField') {
+    }  else if (command === 'c2_pasteEntireField') {
         chrome.storage.local.get({ decap: true }, function (result) {
             getHighlightedText(command, result.decap)
         })
@@ -160,14 +156,6 @@ function getHighlightedText(setting, decap) {
     })
 }
 
-function getAllIDs() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'copyIDs' }, function (response) {
-            copy(response.copy, 'copyIDs')
-        })
-    })
-}
-
 function changeCase() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'changeCase' })
@@ -180,27 +168,16 @@ function changeToSentenceCase() {
     })
 }
 
+
+function platformHotkey(text) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: text })
+    })
+}
+
 function updateField(data) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'setFieldValue', data: data })
-    })
-}
-
-function highlightBroadcast() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'highlight' })
-    })
-}
-
-function checkingWords() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'checkingWords' })
-    })
-}
-
-function fixPressSyndications() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'fixPressSyndications' })
     })
 }
 
@@ -279,7 +256,7 @@ const toSentenceCase = (word) => word.split('').map((letter, index) => {
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request && request.action === 'createWindow' && request.url) {
-        chrome.storage.local.set({ missingContent: request.missingItems }, function() {
+        chrome.storage.local.set({ missingContent: request.missingItems, currentPortal: request.currentPortal }, function() {
             chrome.tabs.create({ url: request.url }, function () {
             })
         })
@@ -287,8 +264,16 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 })
 
-
-
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request && request.action === 'logTabs') {
+        chrome.tabs.query({}, function(foundTabs) {
+            const MPTabs = foundTabs.filter(tab => tab.url.startsWith('https://app.mediaportal') && tab.incognito === request.incog)
+            console.log(foundTabs)
+            sendResponse({ tabs: MPTabs.length })
+        })
+    }
+    return true
+})
 
 
 

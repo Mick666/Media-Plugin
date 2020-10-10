@@ -10,7 +10,6 @@ const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 let seenIDs = []
 let listenerOptions = [true, true, true]
-let checkingHasRun = false
 let lastHighlightedElement = null
 let reclipObj = {}
 let currentPortal = null
@@ -176,23 +175,16 @@ chrome.runtime.onMessage.addListener(
         if (request.action === 'getHighlightedText') {
             sendResponse({ copy: window.getSelection().toString() })
             lastHighlightedElement = document.getSelection().baseNode
-        } else if (request.action === 'highlight') {
-            highlightBroadcastItems()
-            getPossibleSyndications()
-        } else if (request.action === 'checkingWords' && !checkingHasRun) {
-            checkingHasRun = true
-            checkingHighlights()
-        } else if (request.action === 'copyIDs') {
-            let IDs = getAllIDs()
-            sendResponse({ copy: IDs })
         } else if (request.action === 'changeCase') {
             changeCase()
         } else if (request.action === 'changeToSentenceCase') {
             changeToSentenceCase()
         } else if (request.action === 'setFieldValue') {
             setFieldValue(request.data)
-        } else if (request.action === 'fixPressSyndications') {
-            fixPressSyndications()
+        } else if (request.action === 'merge') {
+            clickMerge()
+        } else if (request.action === 'delete') {
+            clickDelete()
         }
     }
 )
@@ -777,9 +769,6 @@ const toSentenceCase = (word) => word.split('').map((letter, index) => {
     else return letter.toLowerCase()
 }).join('')
 
-function getAllIDs() {
-    return [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')].map(item => item.firstChild.innerText.replace('Item ID: ', '')).join('\n')
-}
 
 function changeCase() {
     var textBox = document.activeElement
@@ -911,6 +900,9 @@ function getCapitalisation(text) {
 }
 
 async function archiveSelectedContent() {
+
+    let archivedContent = await getArchivedContent()
+    if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
     const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
@@ -919,24 +911,42 @@ async function archiveSelectedContent() {
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
 
         return `${headline} | ${outletName}`
-    })
+    }).filter(x => !archivedContent[currentPortal].includes(x))
     console.log(selectedItems.length)
+    const archiveDate = new Date().toString()
+    const groupOption = document.getElementsByClassName('content-options')[0].innerText.trimEnd()
+    const sortOption = document.getElementsByClassName('content-options')[1].innerText.trimEnd()
+    const groupings = [...document.getElementsByClassName('media-group ng-scope')].map(x => x.innerText.split('\n').slice(0, 2).join(' with ').trimStart().trimEnd()).join(', ')
+    const tabs = await getMPTabs()
 
-    let selectedFolders = [...document.getElementsByClassName('checkbox-custom')].filter(x => /^Brands|Competitors|Personal|Release Coverage|Spokespeople/.test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart())
+    let selectedFolders = [...document.getElementsByClassName('checkbox-custom')].filter(x => /^Brands|^Competitors|^Personal|^Release Coverage|^Spokespeople/.test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart())
     if (selectedFolders.length === 0) return
 
-    let archivedContent = await getArchivedContent()
     console.log(archivedContent)
+    let detailedArchiveContent = await getDetailedArchivedContent()
+    if (!detailedArchiveContent[currentPortal]) detailedArchiveContent[currentPortal] = {}
 
-    if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
-    archivedContent[currentPortal].push(selectedItems.filter(x => !archivedContent[currentPortal].includes(x)))
+    archivedContent[currentPortal].push(selectedItems)
     archivedContent[currentPortal] = archivedContent[currentPortal].flat()
 
+    selectedItems.forEach(item => {
+        let detailedInfo = [archiveDate, groupOption, sortOption, groupings, tabs]
+        if (detailedArchiveContent[currentPortal][item]) {
+            detailedArchiveContent[currentPortal][item].push(detailedInfo)
+        } else {
+            detailedArchiveContent[currentPortal][item] = [detailedInfo]
+        }
+    })
+
     console.log(archivedContent)
+    console.log(detailedArchiveContent)
 
     lastAddedContent = [window.location.href.toString(), selectedItems]
 
     chrome.storage.local.set({ archivedContent: archivedContent }, function() {
+    })
+
+    chrome.storage.local.set({ detailedArchiveContent: detailedArchiveContent }, function() {
     })
 
 }
@@ -983,7 +993,8 @@ async function checkAddedContent() {
             chrome.runtime.sendMessage({
                 action: 'createWindow',
                 url: 'missingContent.html',
-                missingItems: missingItems
+                missingItems: missingItems,
+                currentPortal: currentPortal
             })
         } else {
             alert('No missing items detected!*\n\n\n*We hope anyway')
@@ -1019,22 +1030,26 @@ function improveAccessibiltyOptions() {
     button.innerText = 'MERGE ITEMS'
     button.style.marginLeft = '15px'
     button.className = 'mat-stroked-button mat-primary _mat-animation-noopable AVeryLongClassNameNoOneWillEverUse'
-    button.addEventListener('mousedown', () => {
-        if (document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted').length > 0) {
-            document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted')[0].firstElementChild.click()
-        }
-    })
+    button.addEventListener('mousedown', clickMerge)
     let secondButton = document.createElement('BUTTON')
     secondButton.innerText = 'DELETE ITEMS'
     secondButton.style.marginLeft = '15px'
     secondButton.className = 'mat-stroked-button mat-primary _mat-animation-noopable'
-    secondButton.addEventListener('mousedown', () => {
-        if (document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable').length > 0) {
-            document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable')[0].firstElementChild.click()
-        }
-    })
+    secondButton.addEventListener('mousedown', clickDelete)
     parentEle.appendChild(button)
     parentEle.appendChild(secondButton)
+}
+
+function clickMerge() {
+    if (document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted').length > 0) {
+        document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted')[0].firstElementChild.click()
+    }
+}
+
+function clickDelete() {
+    if (document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable').length > 0) {
+        document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable')[0].firstElementChild.click()
+    }
 }
 
 function createDBPlatformButtons() {
@@ -1161,3 +1176,23 @@ function getNumberFix() {
         })
     })
 }
+
+function getMPTabs() {
+    return new Promise(response => {
+        chrome.runtime.sendMessage({
+            action: 'logTabs',
+            incog: chrome.extension.inIncognitoContext
+        }, function(tabs) {
+            response(tabs.tabs)
+        })
+    })
+}
+
+function getDetailedArchivedContent() {
+    return new Promise(options => {
+        chrome.storage.local.get({ detailedArchiveContent: {} }, function (data) {
+            options(data.detailedArchiveContent)
+        })
+    })
+}
+

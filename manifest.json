@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.6",
+    "version": "0.6.6.1",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -87,6 +87,12 @@
         },
         "3_toSentenceCase": {
             "description": "Changes the highlighted case to Sentence case"
+        },
+        "z_mergeHotkey": {
+            "description": "Merges selected items"
+        },
+        "z_deleteHotkey": {
+            "description": "Deletes selected items"
         }
     }
 }

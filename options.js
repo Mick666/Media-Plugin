@@ -187,8 +187,6 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Ignores ABC\'s Key Points/subheadings when copying text', 'ABC copy')
         } else if (command.name === '3_changeCase') {
             createOption(command.shortcut, 'Changes the case of highlighted text', 'Case change')
-        } else if (command.name ==='4_highlightBroadcast') {
-            createOption(command.shortcut, 'Highlights possible syndications & broadcast items which need a word recapitalised', 'Syndication/Broadcast higlighter')
         } else if (command.name ==='5_highlightPreviewWords') {
             createOption(command.shortcut, 'Highlight possible mistakes in checking', 'Checking highlighter')
         } else if (command.name ==='l_addLink') {
@@ -203,9 +201,11 @@ chrome.commands.getAll(function(commands) {
             createOption(command.shortcut, 'Deletes all saved IDs', 'Individual ID deleter')
         } else if (command.name ==='3_toSentenceCase') {
             createOption(command.shortcut, 'Changes highlighted text to Sentence Case', 'Case change to Sentence case')
-        }  else if (command.name ==='30_fixPressSyndications') {
-            createOption(command.shortcut, 'Makes all press items the parent item if they have a syndication', 'Press syndication fixer')
-        }else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
+        } else if (command.name ==='z_mergeHotkey') {
+            createOption(command.shortcut, 'Merges selected items', 'Merge hotkey')
+        } else if (command.name ==='z_deleteHotkey') {
+            createOption(command.shortcut, 'Deletes selected items (DB platform only)', 'Delete hotkey')
+        } else if (command.name.startsWith('static-text') || command.name === 't_static-text-10') {
             let shortcut = document.createElement('p')
             shortcut.innerHTML = command.shortcut
             if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'
