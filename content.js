@@ -17,6 +17,17 @@ let currentPortal = null
 let lastAddedContent = []
 
 window.onload = async function () {
+    let lastReset = await getLastContentReset()
+    console.log(`Tracked items last reset at: ${lastReset}`)
+    let currentDate = new Date()
+    let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
+    if (timeDif > 15) {
+        chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+        })
+        chrome.storage.local.set({ archivedContent: {} }, function() {
+        })
+    }
+
     if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
     console.log(currentPortal)
 
@@ -29,6 +40,7 @@ window.onload = async function () {
         document.title = 'DB Platform'
     } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
         document.title = 'Mediaportal Coverage'
+        setTimeout(makeNumbersAccurate, 2000)
     } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
         if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
@@ -41,7 +53,6 @@ window.onload = async function () {
         const highlightOption = await getAutoHighlightOption()
         if (highlightOption) setTimeout(checkingHighlights, 1000)
     } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
-        console.log()
         if (document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset').length === 0) {
             setTimeout(createDBPlatformButtons, 2000)
         } else {
@@ -60,7 +71,6 @@ document.addEventListener('mousedown', async function (e) {
         (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'item-primary-panel'))
         && / Brief| Folder/.test(e.target.parentElement.outerText) ||
         e.target.parentElement && (e.target.parentElement.className === 'item-unread-count' || e.target.parentElement.parentElement.className === 'item-unread-count')) {
-        console.log('testing for mousdown')
 
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else if (e.target.nodeName === 'A' && e.target.children[1]) document.title = e.target.children[1].innerText
@@ -72,18 +82,13 @@ document.addEventListener('mousedown', async function (e) {
                 addHeadlineSortOptions()
             }
         }, 2000)
-    } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK') {
+    } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK' || e.target.nodeName === 'A' && e.target.outerText === ' Coverage' ||
+            e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
         document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
-    } else if (e.target.nodeName === 'A' && e.target.outerText === ' Coverage') {
-        document.addEventListener('scroll', func)
-        document.title = 'Mediaportal Coverage'
-        seenIDs = []
-    } else if (e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
-        document.addEventListener('scroll', func)
-        document.title = 'Mediaportal Coverage'
-        seenIDs = []
+        let setting = await getNumberFix()
+        if (setting) setTimeout(waitForMP, 1000)
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
@@ -121,12 +126,27 @@ document.addEventListener('mousedown', async function (e) {
         setTimeout(createRPButton, 500)
     }
 
-    if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
-        setTimeout(createDBPlatformButtons, 500)
-        setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
+    if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple')) {
+        let setting = await getNumberFix()
+        if (setting) setTimeout(waitForMP, 1000)
     }
 
+    if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
+        setTimeout(createDBPlatformButtons, 1000)
+        setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 1000)
+    }
+
+
 })
+
+function waitForMP() {
+    if (document.getElementsByClassName('lzy-header ng-scope').length > 0){
+        console.log('running loop...')
+        setTimeout(waitForMP, 1000)
+        return
+    }
+    makeNumbersAccurate()
+}
 
 if (window.location.href.toString() === 'https://www.mediaportal.com/' || window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
     document.addEventListener('keydown', async (e) => {
@@ -316,7 +336,10 @@ function getPossibleSyndications() {
             item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
             item.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
         for (let i = 0; i < Math.max(bylines.length, headlines.length); i++) {
-            let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3).replace(/[^A-Za-z ]/, '').toLowerCase().replace(/ and /g, '')
+            console.log(bylines[i].innerText)
+            let byline = bylines[i].innerText.split(' , ').filter(item => item.startsWith('By')).join('').replace(/<span style='background-color:#DAA520'>|<\/span>|p[0-9]{1,2}/g, '').slice(3)
+                .replace(/[^A-Za-z ]/, '').toLowerCase().replace(/ and /gi, '').replace(/ /g, '')
+            console.log(byline)
             let headline = headlines[i].firstElementChild.innerText.toLowerCase()
             if (byline !== '') {
                 if (bylineObj[byline]) {
@@ -374,9 +397,9 @@ function getPossibleSyndications() {
 }
 
 function fixBylines() {
-
+    document.getElementById('bylineFixBtn').innerText = 'Tool running...'
     try {
-        document.getElementById('bylineFixBtn').innerText = 'Tool running...'
+
         expandSectionHeadings()
 
         let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
@@ -386,14 +409,19 @@ function fixBylines() {
                 item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
             .filter(item => {
                 let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
-                return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline))
+                return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline) || byline === 'DANIEL McCULLOCH' ||
+                 /^by |for daily mail| for MailOnline| political editor| Education editor| and /i.test(byline))
             })
-
         bylines.forEach(item => {
             item.click()
             let byline = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[1].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            byline.value = byline.value.replace(/^by /i, '')
+            byline.value = byline.value.replace(/ for daily mail australia| for daily mail| for MailOnline| political editor/i, '')
+
             if (byline.value === 'Alice Man') {
                 byline.value = 'Alice Workman'
+            } else if (byline.value === 'DANIEL McCULLOCH') {
+                byline.value = 'Daniel McCulloch'
             } else if (/.* Mc[a-z]|.* Mac[a-z]/.test(byline.value)) {
                 byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function(match, p1, p2) {
                     if (p1) return 'Mc' + p1.toUpperCase()
@@ -402,6 +430,8 @@ function fixBylines() {
             } else {
                 byline.value = byline.value.split(' ').map(word => toSentenceCase(word)).join(' ')
             }
+
+            byline.value = byline.value.replace(/ and /ig, ' and ')
 
             var textfieldUpdated = new Event('input', {
                 bubbles: true,
@@ -421,6 +451,22 @@ function fixBylines() {
             item.parentElement.parentElement.firstElementChild.children[1].click()
         })
 
+        let bylinesForHighlighting = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
+            .filter(item =>
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+            .filter(item => {
+                let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').replace(/^By By|^By/i, '').split(' ').filter(x => x.length > 0)
+                return byline.length > 2 && !byline.includes('and') && !byline.includes('van') && !byline.includes('le')
+            })
+        bylinesForHighlighting.forEach(byline => {
+            byline.innerHTML = byline.innerHTML.replace(/, By .*,/, function(match){
+                let text = match.slice(2, match.length-2)
+                return `<span style='background-color:#DAA520'>, ${text}, </span>`
+            })
+        })
+
         document.getElementById('bylineFixBtn').innerText = 'Bylines fixed!'
         setTimeout(() => document.getElementById('bylineFixBtn').innerText = 'Fix bylines', 2000)
     } catch (error) {
@@ -437,8 +483,9 @@ function filterObj(obj) {
 }
 
 function fixPressSyndications() {
+    document.getElementById('fixPressBtn').innerText = 'Tool running...'
     try {
-        document.getElementById('fixPressBtn').innerText = 'Tool running...'
+
         expandSectionHeadings()
         let items = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item => item.className.search('standardMode') > -1 &&
@@ -494,8 +541,10 @@ function expandSectionHeadings() {
 
 
 function highlightBroadcastItems() {
+    document.getElementById('highlightBroadcastBtn').innerText = 'Tool running...'
+
     try {
-        document.getElementById('highlightBroadcastBtn').innerText = 'Tool running...'
+
         const headlines = document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')
         for (let i = 0; i < headlines.length; i++) {
             if ((/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/).test(headlines[i].firstChild.innerText)
@@ -503,7 +552,7 @@ function highlightBroadcastItems() {
                     headlines[i].parentElement.lastChild.children[1].children[2].children[0].classList[2] === 'fa-video')) {
                 headlines[i].firstChild.innerHTML = headlines[i].firstChild.innerHTML
                     .replace(/^(?:[^ ]+[ ]+){0,2}[A-Z]{2,}/gi, function (match) {
-                        return '<span style=\'background-color:#FDFF47;\'>' + match + '</span>'
+                        return '<span style=\'background-color:#DAA520;\'>' + match + '</span>'
                     })
             }
         }
@@ -523,7 +572,7 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'Daily Telegraph', 'Sunday Telegraph', 'Age', 'Sunday Age', 'Herald Sun', 'Sunday Herald Sun', 'Canberra Times',
     'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
     'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
-    'The Australian', 'AFR Weekend ']
+    'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
 
 function cleanUpAuthorLines(byline, isIndustry) {
 
@@ -682,10 +731,17 @@ async function checkingHighlights() {
 
         let itemContent = itemSummaries[i].firstElementChild.firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
         let itemContentWords = itemContent.split(' ')
+        let finalCheck = false
 
         for (let j = 0; j < itemContentWords.length; j++) {
 
             let word = itemContentWords[j].replace(/[.!?,]["']{0,1}$/, '').replace(/[^A-Za-z0-9-/]/g, '')
+            if (finalCheck) {
+                if ((/(fuck|shit|cunt|dick|boob|bitch|fag|nigger|chink|gook)/i).test(word)) {
+                    itemContentWords[j] = `<span style='background-color:#FF0000;'>${itemContentWords[j]}</span>` // Possible swear word
+                }
+                continue
+            }
 
             if (j === 0 && (/Exclusive|Inside/i).test(word)) {
                 itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>`// Possible subheading
@@ -707,7 +763,7 @@ async function checkingHighlights() {
             }
 
             if ((/[.!?]["']{0,1}(?:\s|$)/).test(itemContentWords[j]) && j > 5) {
-                break
+                finalCheck = true
             }
         }
 
@@ -798,7 +854,9 @@ function changeToSentenceCase() {
 
 
 function setFieldValue(data) {
-    if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown') return
+    if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown' ||
+    (!lastHighlightedElement.parentElement.nodeName === 'MARK' && !lastHighlightedElement.parentElement.parentElement.parentElement.className  === 'readmore shown')) return
+
     let textBox = document.getSelection().baseNode.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
     let textBoxData = textBox.value.split('[...]')
     if (textBoxData.length === 1) {
@@ -853,7 +911,6 @@ function getCapitalisation(text) {
 }
 
 async function archiveSelectedContent() {
-
     const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
@@ -863,6 +920,7 @@ async function archiveSelectedContent() {
 
         return `${headline} | ${outletName}`
     })
+    console.log(selectedItems.length)
 
     let selectedFolders = [...document.getElementsByClassName('checkbox-custom')].filter(x => /^Brands|Competitors|Personal|Release Coverage|Spokespeople/.test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart())
     if (selectedFolders.length === 0) return
@@ -1014,6 +1072,26 @@ function createButton(innerText, onClickFunc, id) {
     return btn
 }
 
+async function makeNumbersAccurate() {
+    if (document.getElementsByClassName('cov-meta meta-data ng-binding').length === 0 || document.getElementsByClassName('cov-meta meta-data ng-binding')[0].childElementCount === 0) return
+
+    let setting = await getNumberFix()
+    if (!setting) return
+    let personalFolders = [...document.getElementsByClassName('item-primary-panel')].filter(x => !/^Com­peti­tors|^Brands|^Per­sonal|^Spokes­peo­ple|^Re­lease Cov­er­age/.test(x.innerText))
+    let unreadTally = 0
+    let totalItemTally = 0
+    personalFolders.forEach(item => {
+        let correctChild = item.firstElementChild.children[2].childElementCount - 2
+
+        let numbers = item.firstElementChild.children[2].children[correctChild].innerText.split('\n').map(x => Number(x.replace(/[^0-9]/g, '')))
+        if (!isNaN(numbers[0])) unreadTally += numbers[0]
+        if (!isNaN(numbers[1])) totalItemTally += numbers[1]
+    })
+    // console.log(`Unread items: ${unreadTally}, Total Items: ${totalItemTally}`)
+    document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[1].firstElementChild.innerText = unreadTally
+    document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[2].innerText = totalItemTally
+}
+
 
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
@@ -1071,6 +1149,15 @@ function getLastContentReset() {
     return new Promise(options => {
         chrome.storage.local.get({ contentReset: 'September 30, 2020' }, function (data) {
             options(data.contentReset)
+        })
+    })
+}
+
+
+function getNumberFix() {
+    return new Promise(options => {
+        chrome.storage.local.get({ numberFix: true }, function (data) {
+            options(data.numberFix)
         })
     })
 }

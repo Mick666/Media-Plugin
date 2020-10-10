@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.5.7",
+    "version": "0.6.6",
     "options_page": "options.html",
     "content_scripts": [
         {
@@ -64,16 +64,6 @@
         "t_static-text-10": {
             "description": "Static text #10"
         },
-        "4_highlightBroadcast": {
-            "description": "Highlight broadcast items which need recapping"
-        },
-        "5_highlightPreviewWords": {
-            "suggested_key": {
-                "default": "Alt+W",
-                "mac": "Command+Shift+Y"
-            },
-            "description": "Highlight possible mistakes in checking"
-        },
         "l_openLinks": {
             "description": "Open all saved links & copy them to the clipboard"
         },
@@ -97,9 +87,6 @@
         },
         "3_toSentenceCase": {
             "description": "Changes the highlighted case to Sentence case"
-        },
-        "30_fixPressSyndications": {
-            "description": "Makes all press items the parent item if they have a syndication"
         }
     }
 }

@@ -71,13 +71,14 @@ window.addEventListener('load', async () => {
     chrome.storage.local.get({ autoHighlight: true }, function(data){
         document.getElementById('autoHighlight').children[0].checked = data.autoHighlight
     })
-
-    chrome.storage.local.get({ autoAuthorFix: true }, function(data){
-        document.getElementById('autoAuthorFix').children[0].checked = data.autoAuthorFix
+    chrome.storage.local.get({ numberFix: true }, function(data){
+        console.log(data)
+        document.getElementById('numberFix').children[0].checked = data.numberFix
     })
 
     loadTextFieldData()
 })
+
 
 document.getElementById('hotkey').onclick = event => {
     chrome.tabs.create({ url: 'chrome://extensions/configureCommands' })
@@ -120,6 +121,16 @@ document.getElementById('readmore').addEventListener('change', function(e) {
     }
 })
 
+document.getElementById('numberFix').addEventListener('change', function(e) {
+    if (e.target.checked) {
+        chrome.storage.local.set({ numberFix: true }, function() {
+        })
+    } else {
+        chrome.storage.local.set({ numberFix: false }, function() {
+        })
+    }
+})
+
 document.getElementById('decap').addEventListener('change', function(e) {
     if (e.target.checked) {
         chrome.storage.local.set({ decap: true }, function() {
@@ -146,16 +157,6 @@ document.getElementById('autoHighlight').addEventListener('change', function(e) 
         })
     } else {
         chrome.storage.local.set({ autoHighlight: false }, function() {
-        })
-    }
-})
-
-document.getElementById('autoAuthorFix').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        chrome.storage.local.set({ autoAuthorFix: true }, function() {
-        })
-    } else {
-        chrome.storage.local.set({ autoAuthorFix: false }, function() {
         })
     }
 })
