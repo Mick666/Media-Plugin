@@ -25,6 +25,8 @@ window.onload = async function () {
         })
         chrome.storage.local.set({ archivedContent: {} }, function() {
         })
+        chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
+        })
     }
 
     if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
@@ -108,6 +110,8 @@ document.addEventListener('mousedown', async function (e) {
             })
             chrome.storage.local.set({ archivedContent: {} }, function() {
             })
+            chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
+            })
         }
         if (chrome.extension.inIncognitoContext) {
             chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
@@ -125,7 +129,7 @@ document.addEventListener('mousedown', async function (e) {
         setTimeout(createRPButton, 500)
     }
 
-    if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple')) {
+    if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple' || e.target.parentElement.parentElement.className === 'md-virtual-repeat-scroller')) {
         let setting = await getNumberFix()
         if (setting) setTimeout(waitForMP, 1000)
     }
@@ -157,6 +161,8 @@ if (window.location.href.toString() === 'https://www.mediaportal.com/' || window
                 chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
                 })
                 chrome.storage.local.set({ archivedContent: {} }, function() {
+                })
+                chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
                 })
             }
             if (chrome.extension.inIncognitoContext) {
@@ -910,7 +916,7 @@ async function archiveSelectedContent() {
             headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
 
-        return `${headline} | ${outletName}`
+        return `${headline} ||| ${outletName}`
     }).filter(x => !archivedContent[currentPortal].includes(x))
     console.log(selectedItems.length)
     const archiveDate = new Date().toString()
@@ -959,7 +965,7 @@ async function removeArchivedContent() {
             headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
 
-        return `${headline} | ${outletName}`
+        return `${headline} ||| ${outletName}`
     })
     let archivedContent = await getArchivedContent()
 
@@ -979,7 +985,7 @@ async function checkAddedContent() {
     let RPItems = [...document.getElementsByClassName('media-item media-item-compact')].map(x => {
         const outletName = x.children[1].firstElementChild.children[3].firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         const headline = x.firstElementChild.children[1].innerText.slice(0, 90)
-        return `${headline} | ${outletName}`
+        return `${headline} ||| ${outletName}`
     })
     console.log(RPItems)
     console.log(currentPortal)
@@ -1095,14 +1101,29 @@ async function makeNumbersAccurate() {
     let personalFolders = [...document.getElementsByClassName('item-primary-panel')].filter(x => !/^Com­peti­tors|^Brands|^Per­sonal|^Spokes­peo­ple|^Re­lease Cov­er­age/.test(x.innerText))
     let unreadTally = 0
     let totalItemTally = 0
+    console.log(personalFolders)
     personalFolders.forEach(item => {
         let correctChild = item.firstElementChild.children[2].childElementCount - 2
 
-        let numbers = item.firstElementChild.children[2].children[correctChild].innerText.split('\n').map(x => Number(x.replace(/[^0-9]/g, '')))
+        let numbers = item.firstElementChild.children[2].children[correctChild]
+
+        if (numbers.className === 'item-unread-count') {
+            if (numbers.innerText.split('\n').length === 2) {
+                numbers = numbers.innerText.split('\n').map(x => {
+                    if (/^[0-9]{1,} unread$|^[0-9]{1,} total$/.test(x)) return Number(x.replace(/[^0-9]/g, ''))
+                    else return 0
+                })
+            } else if (numbers.innerText.split('\n').length === 1 && /^[0-9]{1,} unread [0-9]{1,} total$/.test(numbers.innerText)) {
+                numbers = numbers.innerText.replace(/[^0-9 ]/g, '').split('  ').map(x => Number(x.replace(/[^0-9]/g, '')))
+            }
+
+        } else return
+
+        console.log(numbers)
         if (!isNaN(numbers[0])) unreadTally += numbers[0]
         if (!isNaN(numbers[1])) totalItemTally += numbers[1]
     })
-    // console.log(`Unread items: ${unreadTally}, Total Items: ${totalItemTally}`)
+    console.log(`Unread items: ${unreadTally}, Total Items: ${totalItemTally}`)
     document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[1].firstElementChild.innerText = unreadTally
     document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[2].innerText = totalItemTally
 }
