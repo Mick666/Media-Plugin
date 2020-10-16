@@ -135,6 +135,11 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
+    } else if (setting === 'copyStaticText') {
+        sandbox.value = str
+        sandbox.select()
+        document.execCommand('copy')
+        sandbox.value = ('')
     } else {
         chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function (result) {
             console.log(result)
@@ -254,13 +259,15 @@ const toSentenceCase = (word) => word.split('').map((letter, index) => {
     } else return letter.toLowerCase()
 }).join('')
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request) {
     if (request && request.action === 'createWindow' && request.url) {
         chrome.storage.local.set({ missingContent: request.missingItems, currentPortal: request.currentPortal }, function() {
             chrome.tabs.create({ url: request.url }, function () {
             })
         })
 
+    } else if (request && request.action === 'copyStaticText') {
+        copy(request.text, request.action)
     }
 })
 

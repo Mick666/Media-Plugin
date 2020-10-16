@@ -8,6 +8,7 @@ const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 
     'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
+const defaultStaticTextArr = ['Similar coverage reported by: ', 'Also in other publications', '', '', '', '', '', '', '', '']
 let seenIDs = []
 let listenerOptions = [true, true, true]
 let lastHighlightedElement = null
@@ -16,6 +17,7 @@ let currentPortal = null
 let lastAddedContent = []
 
 window.onload = async function () {
+    const browserURL = window.location.href.toString()
     let lastReset = await getLastContentReset()
     console.log(`Tracked items last reset at: ${lastReset}`)
     let currentDate = new Date()
@@ -29,7 +31,11 @@ window.onload = async function () {
         })
     }
 
-    if (window.location.href.toString().startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+    if (browserURL.startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
+    // if (!currentPortal && browserURL !== 'https://www.mediaportal.com/' && !browserURL.startsWith('https://www.mediaportal.com/login.aspx') && browserURL.startsWith('https://app.mediaportal.com')) {
+    //     alert('Plugin error: The briefing login for this portal hasn\'t been saved. Please log out and into this portal to resolve this issue.\
+    //     \nIf you\'re still seeing this message after relogging, contact Michael.Martino@isentia.com. Note the unadded item tracker won\'t work with no login saved')
+    // }
     console.log(currentPortal)
 
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
@@ -37,12 +43,12 @@ window.onload = async function () {
         if (document.getElementsByClassName('sorting dropdown').length > 0) {
             addHeadlineSortOptions()
         }
-    } else if (window.location.href === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
+    } else if (browserURL === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
         document.title = 'DB Platform'
-    } else if (window.location.href === 'https://app.mediaportal.com/#/monitor/media-coverage') {
+    } else if (browserURL === 'https://app.mediaportal.com/#/monitor/media-coverage') {
         document.title = 'Mediaportal Coverage'
         setTimeout(makeNumbersAccurate, 2000)
-    } else if (window.location.href === 'https://app.mediaportal.com/#/report-builder/view') {
+    } else if (browserURL === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
         if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
         else {
@@ -50,17 +56,12 @@ window.onload = async function () {
                 if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
             }), 500)
         }
-    } else if (window.location.href.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) {
+    } else if (browserURL.startsWith('https://briefing-api.mediaportal.com/api/download')) {
         const highlightOption = await getAutoHighlightOption()
         if (highlightOption) setTimeout(checkingHighlights, 1000)
-    } else if (window.location.href.toString().startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
-        if (document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset').length === 0) {
-            setTimeout(createDBPlatformButtons, 2000)
-        } else {
-            createDBPlatformButtons()
-            if (document.getElementsByClassName('mat-slide-toggle-label').length > 0) document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions)
-            else setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
-        }
+    } else if (browserURL.startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
+        waitForMP('flex flex-1 flex-direction-column mp-form-fieldset', createDBPlatformButtons)
+        setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
     }
 }
 
@@ -75,7 +76,9 @@ document.addEventListener('mousedown', async function (e) {
 
         if (e.target.nodeName === 'DIV') document.title = e.target.parentElement.children[1].outerText.trimEnd()
         else if (e.target.nodeName === 'A' && e.target.children[1]) document.title = e.target.children[1].innerText
-        else if (e.target.nodeName === 'SPAN' && (e.target.className === 'unread ng-scope' || e.target.className === 'item-type ng-binding')) document.title = e.target.parentElement.parentElement.parentElement.children[1].innerText
+        else if (e.target.nodeName === 'SPAN' && (e.target.className === 'unread ng-scope' || e.target.className === 'item-type ng-binding' || e.target.className === 'total' || e.target.className === 'unread ng-scope has-unread')) {
+            document.title = e.target.parentElement.parentElement.parentElement.children[1].innerText
+        }
         else document.title = e.target.outerText.trimEnd()
 
         setTimeout(function () {
@@ -89,7 +92,7 @@ document.addEventListener('mousedown', async function (e) {
         document.title = 'Mediaportal Coverage'
         seenIDs = []
         let setting = await getNumberFix()
-        if (setting) setTimeout(waitForMP, 1000)
+        if (setting) waitForMPToLoad('lzy-header ng-scope', makeNumbersAccurate)
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
@@ -127,27 +130,40 @@ document.addEventListener('mousedown', async function (e) {
     } else if (window.location.href.toString() === 'https://app.mediaportal.com/#/report-builder/view' && document.getElementsByClassName('dropdown-display').length > 0
         && e.target.parentElement && e.target.parentElement.parentElement === document.getElementsByClassName('dropdown-list')[0].firstElementChild.children[4]) {
         setTimeout(createRPButton, 500)
+    } else if (e.target.innerText === 'Search Now' && window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
+        waitForMP('sorting dropdown', addHeadlineSortOptions)
     }
 
     if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple' || e.target.parentElement.parentElement.className === 'md-virtual-repeat-scroller')) {
         let setting = await getNumberFix()
-        if (setting) setTimeout(waitForMP, 1000)
+        if (setting) waitForMPToLoad()
     }
 
     if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
-        setTimeout(createDBPlatformButtons, 1000)
+        waitForMP('flex flex-1 flex-direction-column mp-form-fieldset', createDBPlatformButtons)
         setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 1000)
     }
-
-
 })
 
-function waitForMP() {
-    if (document.getElementsByClassName('lzy-header ng-scope').length > 0){
+function waitForMP(classToCheck, fnc, maxRecursion = 15) {
+    if (maxRecursion < 1) return
+    if (document.getElementsByClassName(classToCheck).length === 0){
         console.log('running loop...')
-        setTimeout(waitForMP, 1000)
+        setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
         return
     }
+    console.log(document.getElementsByClassName(classToCheck).length)
+    fnc()
+}
+
+function waitForMPToLoad() {
+    console.log(document.getElementsByClassName('lzy-header ng-scope').length)
+    if (document.getElementsByClassName('lzy-header ng-scope').length > 2){
+        console.log('running loop...')
+        setTimeout(() => waitForMP, 1000)
+        return
+    }
+    console.log(document.getElementsByClassName('lzy-header ng-scope').length)
     makeNumbersAccurate()
 }
 
@@ -218,13 +234,14 @@ function createNewListItem(direction) {
     return newListItem
 }
 function sortItems(direction) {
-    let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
-    for (let i = 0; i < groups.length; i++) {
-        let parent = groups[i].firstElementChild.firstElementChild
+    if (window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
+        let parent = document.getElementsByClassName('list-wrap ng-scope')[0]
         let children = [...parent.children]
         children.sort((a, b) => {
-            let aText = a.firstElementChild.firstElementChild.children[1].innerText
-            let bText = b.firstElementChild.firstElementChild.children[1].innerText
+            let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+            if (/^'|^"/.test(aText)) aText = aText.slice(1)
+            let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+            if (/^'|^"/.test(aText)) aText = aText.slice(2)
             if (aText < bText) {
                 return direction === 'Asc' ? -1 : 1
             }
@@ -235,6 +252,28 @@ function sortItems(direction) {
         })
         for (let j = 0; j < children.length; j++) {
             parent.appendChild(children[j])
+        }
+    } else {
+        let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
+        for (let i = 0; i < groups.length; i++) {
+            let parent = groups[i].firstElementChild.firstElementChild
+            let children = [...parent.children]
+            children.sort((a, b) => {
+                let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+                if (/^'|^"/.test(aText)) aText = aText.slice(1)
+                let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+                if (/^'|^"/.test(aText)) aText = aText.slice(2)
+                if (aText < bText) {
+                    return direction === 'Asc' ? -1 : 1
+                }
+                if (aText > bText) {
+                    return direction === 'Asc' ? 1 : -1
+                }
+                return 0
+            })
+            for (let j = 0; j < children.length; j++) {
+                parent.appendChild(children[j])
+            }
         }
     }
 }
@@ -359,7 +398,7 @@ function getPossibleSyndications() {
         for (let key in bylineObj) {
             for (let i = 0; i < bylineObj[key].length; i++) {
                 const bylineParent = bylineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
-                bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+                bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;` )
                 bylineParent.className += 'syndication-tagged'
             }
             if (colorCount + 1 === syndColors.length) colorCount = 0
@@ -373,13 +412,13 @@ function getPossibleSyndications() {
                     let color = headlineParent.style.borderColor
                     for (let j = i; j < headlineObj[key].length; j++) {
                         const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
-                        headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 2px;` )
+                        headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 3px;` )
                     }
                     if (colorCount - 1 < 0) colorCount = syndColors.length - 1
                     else colorCount--
                     break
                 } else {
-                    headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 2px;` )
+                    headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;` )
                     headlineParent.className += 'syndication-tagged'
                 }
             }
@@ -395,6 +434,7 @@ function getPossibleSyndications() {
 }
 
 function fixBylines() {
+    const bylineValues = ['for daily mail', 'for mailonline', 'political editor', 'education editor', 'and', 'editorial', 'alice man', 'editorial', 'aged care guru']
     document.getElementById('bylineFixBtn').innerText = 'Tool running...'
     try {
 
@@ -407,8 +447,8 @@ function fixBylines() {
                 item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
             .filter(item => {
                 let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
-                return byline.length > 0 && (byline === 'Alice Man' || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline) || byline === 'DANIEL McCULLOCH' ||
-                 /^by |for daily mail| for MailOnline| political editor| Education editor| and /i.test(byline))
+                return byline.length > 0 && (bylineValues.includes(byline.toLowerCase()) || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline) || byline === 'DANIEL McCULLOCH' ||
+                 /^by /i.test(byline))
             })
         bylines.forEach(item => {
             item.click()
@@ -488,8 +528,8 @@ function fixPressSyndications() {
         let items = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item => item.className.search('standardMode') > -1 &&
             item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
-            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild
-                .className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted')
+            (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted' ||
+             (/^Age|^The Saturday Age|^Sunday Age/).test(item.firstElementChild.firstElementChild.firstElementChild.children[1].innerText)))
 
         items.forEach(item => {
             if (item.children[1].firstElementChild.innerText === '') {
@@ -730,6 +770,7 @@ async function checkingHighlights() {
         let itemContent = itemSummaries[i].firstElementChild.firstElementChild.innerHTML.trimStart().replace(/ {2,}/g, '').replace('\n', '')
         let itemContentWords = itemContent.split(' ')
         let finalCheck = false
+        let checkLength = itemContentWords.length
 
         for (let j = 0; j < itemContentWords.length; j++) {
 
@@ -761,8 +802,8 @@ async function checkingHighlights() {
             }
 
             if ((/[.!?]["']{0,1}(?:\s|$)/).test(itemContentWords[j]) && j > 5) {
-                finalCheck = true
-            }
+                checkLength = Math.min(j + 4, checkLength)
+            } else if (j === checkLength) finalCheck = true
         }
 
         itemSummaries[i].firstElementChild.firstElementChild.innerHTML = itemContentWords.join(' ')
@@ -915,13 +956,13 @@ async function archiveSelectedContent() {
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
             headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
-
+        headline = headline.replace(/’|‘/g, '\'')
         return `${headline} ||| ${outletName}`
     }).filter(x => !archivedContent[currentPortal].includes(x))
     console.log(selectedItems.length)
     const archiveDate = new Date().toString()
-    const groupOption = document.getElementsByClassName('content-options')[0].innerText.trimEnd()
-    const sortOption = document.getElementsByClassName('content-options')[1].innerText.trimEnd()
+    const groupOption = document.getElementsByClassName('content-options').length > 1 ? document.getElementsByClassName('content-options')[0].innerText.trimEnd() : 'N/A'
+    const sortOption = document.getElementsByClassName('content-options').length > 1 ? document.getElementsByClassName('content-options')[1].innerText.trimEnd() : document.getElementsByClassName('content-options')[0].innerText.trimEnd()
     const groupings = [...document.getElementsByClassName('media-group ng-scope')].map(x => x.innerText.split('\n').slice(0, 2).join(' with ').trimStart().trimEnd()).join(', ')
     const tabs = await getMPTabs()
 
@@ -937,10 +978,8 @@ async function archiveSelectedContent() {
 
     selectedItems.forEach(item => {
         let detailedInfo = [archiveDate, groupOption, sortOption, groupings, tabs]
-        if (detailedArchiveContent[currentPortal][item]) {
-            detailedArchiveContent[currentPortal][item].push(detailedInfo)
-        } else {
-            detailedArchiveContent[currentPortal][item] = [detailedInfo]
+        if (!detailedArchiveContent[currentPortal][item]) {
+            detailedArchiveContent[currentPortal][item] = detailedInfo
         }
     })
 
@@ -964,7 +1003,7 @@ async function removeArchivedContent() {
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
             headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
-
+        headline = headline.replace(/’|‘/g, '\'')
         return `${headline} ||| ${outletName}`
     })
     let archivedContent = await getArchivedContent()
@@ -984,7 +1023,7 @@ async function removeArchivedContent() {
 async function checkAddedContent() {
     let RPItems = [...document.getElementsByClassName('media-item media-item-compact')].map(x => {
         const outletName = x.children[1].firstElementChild.children[3].firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
-        const headline = x.firstElementChild.children[1].innerText.slice(0, 90)
+        const headline = x.firstElementChild.children[1].innerText.slice(0, 90).replace(/’|‘/g, '\'')
         return `${headline} ||| ${outletName}`
     })
     console.log(RPItems)
@@ -1058,7 +1097,7 @@ function clickDelete() {
     }
 }
 
-function createDBPlatformButtons() {
+async function createDBPlatformButtons() {
     let para = document.createElement('P')
     para.innerText = 'NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.'
 
@@ -1074,13 +1113,33 @@ function createDBPlatformButtons() {
         ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
     for (let i = 0; i < buttons.length; i++) {
-        div.appendChild(createButton(buttons[i][0], buttons[i][1], buttons[i][2]))
+        div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
     }
 
     document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(div)
+
+    let paraStatic = document.createElement('P')
+    paraStatic.innerText = 'Copy preset text to your clipboard by clicking the icon next to relevant field.\nYou can set the text that appears here in the extension options or by clicking save below.\n You can also set hotkeys in the options for these as well. '
+
+    let labelStatic = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
+    labelStatic.innerText = 'PRESET TEXT'
+
+    let divStatic = document.createElement('DIV')
+    divStatic.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
+    divStatic.style.padding = '10px'
+    divStatic.appendChild(labelStatic)
+    divStatic.appendChild(paraStatic)
+
+    let staticText = await getStaticText()
+    staticText.forEach(item => createStaticTextField(item, divStatic))
+    let staticSaveBtn = createFeatureButton('Save', saveStaticText, 'saveStaticTextBtn')
+    staticSaveBtn.style.marginTop = '5px'
+    divStatic.appendChild(staticSaveBtn)
+
+    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(divStatic)
 }
 
-function createButton(innerText, onClickFunc, id) {
+function createFeatureButton(innerText, onClickFunc, id) {
     let btn = document.createElement('button')
 
     btn.setAttribute( 'style', 'font-size: 14px !important;' )
@@ -1093,6 +1152,46 @@ function createButton(innerText, onClickFunc, id) {
     return btn
 }
 
+function createStaticTextField(text, parentDiv) {
+    let div = document.createElement('DIV')
+    div.className = 'flex flex-1 flex-direction-row ng-pristine ng-valid ng-touched'
+    div.style.paddingBottom = '7px'
+    let input = document.createElement('input')
+    input.className = 'link-name mat-input-element mat-form-field-autofill-control cdk-text-field-autofill-monitored ng-pristine ng-valid ng-touched static-text-field'
+    input.value = text
+    input.setAttribute( 'style', 'padding: 5px !important;' )
+    div.appendChild(input)
+
+    let span = document.createElement('SPAN')
+    span.className = 'copy-icon mat-icon fa fa-clipboard mat-icon-no-color'
+    span.setAttribute( 'style', 'color: rgb(47, 164, 250) !important; line-height: 25px !important; padding-left: 10px' )
+    span.addEventListener('mousedown', copyStaticText)
+    div.appendChild(span)
+    parentDiv.appendChild(div)
+}
+
+function saveStaticText() {
+    const staticTextVals = [...document.getElementsByClassName('static-text-field')].map(item => item.value)
+    chrome.storage.local.set({ staticText: staticTextVals }, function() {
+    })
+    document.getElementById('saveStaticTextBtn').innerText = 'Saved!'
+    setTimeout(() => document.getElementById('saveStaticTextBtn').innerText = 'Save', 1000)
+}
+
+function copyStaticText(event) {
+    console.log(event.button)
+    let value = event.target.parentElement.firstElementChild.value
+    if (event.button !== 0 || value === '') return
+
+    chrome.runtime.sendMessage({
+        action: 'copyStaticText',
+        text: value
+    })
+    let text = value
+    event.target.parentElement.firstElementChild.value = 'Copied!'
+    setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
+}
+
 async function makeNumbersAccurate() {
     if (document.getElementsByClassName('cov-meta meta-data ng-binding').length === 0 || document.getElementsByClassName('cov-meta meta-data ng-binding')[0].childElementCount === 0) return
 
@@ -1101,7 +1200,6 @@ async function makeNumbersAccurate() {
     let personalFolders = [...document.getElementsByClassName('item-primary-panel')].filter(x => !/^Com­peti­tors|^Brands|^Per­sonal|^Spokes­peo­ple|^Re­lease Cov­er­age/.test(x.innerText))
     let unreadTally = 0
     let totalItemTally = 0
-    console.log(personalFolders)
     personalFolders.forEach(item => {
         let correctChild = item.firstElementChild.children[2].childElementCount - 2
 
@@ -1119,7 +1217,6 @@ async function makeNumbersAccurate() {
 
         } else return
 
-        console.log(numbers)
         if (!isNaN(numbers[0])) unreadTally += numbers[0]
         if (!isNaN(numbers[1])) totalItemTally += numbers[1]
     })
@@ -1168,13 +1265,13 @@ function getArchivedContent() {
 function getCurrentPortal() {
     if (chrome.extension.inIncognitoContext) {
         return new Promise(options => {
-            chrome.storage.local.get({ currentPortalIncog: {} }, function (data) {
+            chrome.storage.local.get({ currentPortalIncog: null }, function (data) {
                 options(data.currentPortalIncog)
             })
         })
     } else {
         return new Promise(options => {
-            chrome.storage.local.get({ currentPortalRegular: {} }, function (data) {
+            chrome.storage.local.get({ currentPortalRegular: null }, function (data) {
                 options(data.currentPortalRegular)
             })
         })
@@ -1213,6 +1310,14 @@ function getDetailedArchivedContent() {
     return new Promise(options => {
         chrome.storage.local.get({ detailedArchiveContent: {} }, function (data) {
             options(data.detailedArchiveContent)
+        })
+    })
+}
+
+function getStaticText() {
+    return new Promise(options => {
+        chrome.storage.local.get({ staticText: defaultStaticTextArr }, function (data) {
+            options(data.staticText)
         })
     })
 }
