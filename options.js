@@ -40,12 +40,11 @@ async function loadTextFieldData() {
     let wordList = document.getElementsByClassName('wordlist')
     for (let i = 0; i < wordList.length; i++) {
         wordList[i].rows = 25
-        wordList[i].cols = 75
+        wordList[i].cols = 108
     }
 }
 
 window.addEventListener('load', async () => {
-    document.getElementById('options').style.display = 'block'
     let listenerOptions = await getEventListenerOptions()
     let optionCheckboxes = document.getElementsByClassName('listenerOptions')
     for (let i = 0; i < optionCheckboxes.length; i++) {
@@ -210,7 +209,7 @@ chrome.commands.getAll(function(commands) {
             shortcut.innerHTML = command.shortcut
             if (shortcut.innerHTML === '') shortcut.innerHTML = 'Not bound'
             let desc = document.createElement('p')
-            desc.innerHTML = command.description
+            desc.innerHTML = command.description.replace('Static', 'Preset')
             itemGrid[1].appendChild(shortcut)
             itemGrid[0].appendChild(desc)
         } else if (command.name !== '_execute_browser_action'){

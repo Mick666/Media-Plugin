@@ -3,6 +3,7 @@
 <head>
     <title>MP Improvement options</title>
     <link rel="stylesheet" href="optionsStyle.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;1,100&display=swap" rel="stylesheet">
 </head>
 <style>
     
@@ -13,89 +14,86 @@
         <h2>Mediaportal Improvement plugin options</h2>
         <div class="tab">
             <button class="tablinks" id='optionsTab' data-key='options'>Options</button>
-            <button class="tablinks" id='staticTextTab' data-key='statictext'>Static Text</button>
+            <button class="tablinks" id='hotkeyTab' data-key='hotkeys'>Hotkeys</button>
+            <button class="tablinks" id='staticTextTab' data-key='statictext'>Preset Text</button>
             <button class="tablinks" id='smartDecapTab' data-key='smartdecap'>Smart decapping words</button>
           </div>
         <div id='options' class='tabcontent active'>
             <div class="switchContainer">
-                Expand all broadcast items automatically: <label id="heroSentence" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Expand all broadcast items automatically:
             </div>
+            <label id="heroSentence" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Disable Media Outlet/Media Contact links (requires a page refresh): <label id="switch" class="switch listenerOptions">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Disable Media Outlet/Media Contact links (requires a page refresh):
             </div>
+            <label id="switch" class="switch listenerOptions">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Grey out automated broadcast: <label id="automated" class="switch listenerOptions">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Grey out automated broadcast:
             </div>
+            <label id="automated" class="switch listenerOptions">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Grey out repeated items: <label id="repeated" class="switch listenerOptions">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Grey out repeated items:
             </div>
+            <label id="repeated" class="switch listenerOptions">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Decapitalise text when using alternate copy shortcuts: <label id="decap" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Decapitalise text when using alternate copy shortcuts:
             </div>
+            <label id="decap" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Replace text boxes when using alternate copy shortcuts, retaining any text after [...] : <label id="textBoxReplace" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Replace text boxes when using alternate copy shortcuts, retaining any text after [...] :
             </div>
+            <label id="textBoxReplace" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Scroll back to the top of an item after clicking 'Read more': <label id="readmore" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Scroll back to the top of an item after clicking 'Read more':
             </div>
+            <label id="readmore" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Automatically highlight issues on the Preview page: <label id="autoHighlight" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Automatically highlight issues on the Preview page:
             </div>
+            <label id="autoHighlight" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
             <div class="switchContainer">
-                Correct MP's unread/total item count to not include PFs: <label id="numberFix" class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider round"></span>
-                </label>
+                Correct MP's unread/total item count to not include PFs:
             </div>
+            <label id="numberFix" class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id='hotkeys' class='tabcontent'>
             <div id="parentGrid">
                 <h4>Command</h4>
                 <h4>Hotkey</h4>
                 <h4>Action</h4>
-                <!-- <div class="subGrid">
-                    <h4 class="itemGrid">Command</h6>
-                    <div class="itemGrid"> 
-                    </div>
-                </div>
-                <div class="subGrid" id='hotkeys'>
-                    <h4>Hotkey</h6>
-                    <div class="itemGrid">       
-                    </div>
-                </div>
-                <div class="subGrid">
-                    <h4>Action</h6>
-                    <div class="itemGrid"> 
-                    </div>        
-                </div> -->
             </div>
         </div>
         <div id='statictext' class='tabcontent'>
             <div id="staticTextParentGrid">
                 <div class="subGrid">
-                    <h4>Static Text</h6>
+                    <h4>Preset Text</h6>
                     <div class="itemGrid"> 
                     </div>
                 </div>

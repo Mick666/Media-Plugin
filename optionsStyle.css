@@ -1,6 +1,18 @@
+html {
+    background-color: #222629;
+    font-family: 'Roboto', sans-serif;
+}
+
+p {
+    font-family: 'Roboto', sans-serif;
+}
+h1, h2, h3, h4, i, button, div, textarea {
+    font-family: 'Roboto', sans-serif;
+}
+
 body {
+    background-color: #222629;
     margin: 40px;
-    background-color: rgb(32, 33, 36);
     display: block;
 }
 div {
@@ -16,6 +28,8 @@ a {
     display: inline-block;
     width: 20px;
     height: 15px;
+    margin-left: 190px;
+    margin-bottom: 10px;
 }
 
 .switch input { 
@@ -102,7 +116,7 @@ input:checked + .slider:before {
 .container {
     position: relative;
     margin: 0px auto;
-    width: 570px;
+    width: 700px;
     padding: initial;
     border: 1px solid #D2DBED;
     border-radius: 5px;
@@ -123,6 +137,10 @@ input:checked + .slider:before {
 #hotkeys {
     padding-left: 20px;
     padding-right: 20px;
+}
+#options {
+    display: grid;
+    grid-template-columns: auto auto;
 }
 
 /* Style the tab */
