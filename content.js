@@ -23,11 +23,11 @@ window.onload = async function () {
     let currentDate = new Date()
     let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
     if (timeDif > 15) {
-        chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+        chrome.storage.local.set({ contentReset: currentDate.toString() }, function () {
         })
-        chrome.storage.local.set({ archivedContent: {} }, function() {
+        chrome.storage.local.set({ archivedContent: {} }, function () {
         })
-        chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
+        chrome.storage.local.set({ detailedArchiveContent: {} }, function () {
         })
     }
 
@@ -87,7 +87,7 @@ document.addEventListener('mousedown', async function (e) {
             }
         }, 2000)
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK' || e.target.nodeName === 'A' && e.target.outerText === ' Coverage' ||
-            e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
+        e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
         document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
@@ -109,21 +109,21 @@ document.addEventListener('mousedown', async function (e) {
         console.log(lastReset, currentDate)
         let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
         if (timeDif > 15) {
-            chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+            chrome.storage.local.set({ contentReset: currentDate.toString() }, function () {
             })
-            chrome.storage.local.set({ archivedContent: {} }, function() {
+            chrome.storage.local.set({ archivedContent: {} }, function () {
             })
-            chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
+            chrome.storage.local.set({ detailedArchiveContent: {} }, function () {
             })
         }
         if (chrome.extension.inIncognitoContext) {
-            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function () {
             })
         } else {
-            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function () {
             })
         }
-    }  else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
+    } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
         archiveSelectedContent()
     } else if (e.target.parentElement && e.target.parentElement.className === 'modal-footer ng-scope' && e.target.innerText === 'Remove') {
         removeArchivedContent()
@@ -147,7 +147,7 @@ document.addEventListener('mousedown', async function (e) {
 
 function waitForMP(classToCheck, fnc, maxRecursion = 15) {
     if (maxRecursion < 1) return
-    if (document.getElementsByClassName(classToCheck).length === 0){
+    if (document.getElementsByClassName(classToCheck).length === 0) {
         console.log('running loop...')
         setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
         return
@@ -157,13 +157,11 @@ function waitForMP(classToCheck, fnc, maxRecursion = 15) {
 }
 
 function waitForMPToLoad() {
-    console.log(document.getElementsByClassName('lzy-header ng-scope').length)
-    if (document.getElementsByClassName('lzy-header ng-scope').length > 2){
+    if (document.getElementsByClassName('lzy-header ng-scope').length > 2) {
         console.log('running loop...')
         setTimeout(() => waitForMP, 1000)
         return
     }
-    console.log(document.getElementsByClassName('lzy-header ng-scope').length)
     makeNumbersAccurate()
 }
 
@@ -174,18 +172,18 @@ if (window.location.href.toString() === 'https://www.mediaportal.com/' || window
             let currentDate = new Date()
             let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
             if (timeDif > 15) {
-                chrome.storage.local.set({ contentReset: currentDate.toString() }, function() {
+                chrome.storage.local.set({ contentReset: currentDate.toString() }, function () {
                 })
-                chrome.storage.local.set({ archivedContent: {} }, function() {
+                chrome.storage.local.set({ archivedContent: {} }, function () {
                 })
-                chrome.storage.local.set({ detailedArchiveContent: {} }, function() {
+                chrome.storage.local.set({ detailedArchiveContent: {} }, function () {
                 })
             }
             if (chrome.extension.inIncognitoContext) {
-                chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+                chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function () {
                 })
             } else {
-                chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function() {
+                chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function () {
                 })
             }
         }
@@ -298,8 +296,8 @@ function func() {
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
         .filter(item => !item.className.includes('edited')
-        && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
-        && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
+            && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
+            && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
 
     items.forEach(item => {
         if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')) {
@@ -398,7 +396,7 @@ function getPossibleSyndications() {
         for (let key in bylineObj) {
             for (let i = 0; i < bylineObj[key].length; i++) {
                 const bylineParent = bylineObj[key][i].parentElement.parentElement.parentElement.parentElement.parentElement
-                bylineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;` )
+                bylineParent.setAttribute('style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;`)
                 bylineParent.className += 'syndication-tagged'
             }
             if (colorCount + 1 === syndColors.length) colorCount = 0
@@ -412,13 +410,13 @@ function getPossibleSyndications() {
                     let color = headlineParent.style.borderColor
                     for (let j = i; j < headlineObj[key].length; j++) {
                         const headlineParentAlt = headlineObj[key][i].parentElement.parentElement.parentElement.parentElement
-                        headlineParentAlt.setAttribute( 'style', `border-color: ${color} !important; border-width: 3px;` )
+                        headlineParentAlt.setAttribute('style', `border-color: ${color} !important; border-width: 3px;`)
                     }
                     if (colorCount - 1 < 0) colorCount = syndColors.length - 1
                     else colorCount--
                     break
                 } else {
-                    headlineParent.setAttribute( 'style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;` )
+                    headlineParent.setAttribute('style', `border-color: ${syndColors[colorCount]} !important; border-width: 3px;`)
                     headlineParent.className += 'syndication-tagged'
                 }
             }
@@ -448,7 +446,7 @@ function fixBylines() {
             .filter(item => {
                 let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
                 return byline.length > 0 && (bylineValues.includes(byline.toLowerCase()) || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline) || byline === 'DANIEL McCULLOCH' ||
-                 /^by /i.test(byline))
+                    /^by /i.test(byline))
             })
         bylines.forEach(item => {
             item.click()
@@ -461,7 +459,7 @@ function fixBylines() {
             } else if (byline.value === 'DANIEL McCULLOCH') {
                 byline.value = 'Daniel McCulloch'
             } else if (/.* Mc[a-z]|.* Mac[a-z]/.test(byline.value)) {
-                byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function(match, p1, p2) {
+                byline.value = byline.value.replace(/Mc([a-z])|Mac([a-z])/, function (match, p1, p2) {
                     if (p1) return 'Mc' + p1.toUpperCase()
                     else return 'Mac' + p2.toUpperCase()
                 })
@@ -482,27 +480,11 @@ function fixBylines() {
         let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item =>
                 item.className.search('standardMode') > -1 &&
-            item.className.search('mat-expanded') > -1)
+                item.className.search('mat-expanded') > -1)
 
         openedItems.forEach(item => {
             item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
             item.parentElement.parentElement.firstElementChild.children[1].click()
-        })
-
-        let bylinesForHighlighting = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
-            .filter(item =>
-                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild &&
-                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
-                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
-            .filter(item => {
-                let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').replace(/^By By|^By/i, '').split(' ').filter(x => x.length > 0)
-                return byline.length > 2 && !byline.includes('and') && !byline.includes('van') && !byline.includes('le')
-            })
-        bylinesForHighlighting.forEach(byline => {
-            byline.innerHTML = byline.innerHTML.replace(/, By .*,/, function(match){
-                let text = match.slice(2, match.length-2)
-                return `<span style='background-color:#DAA520'>, ${text}, </span>`
-            })
         })
 
         document.getElementById('bylineFixBtn').innerText = 'Bylines fixed!'
@@ -514,10 +496,44 @@ function fixBylines() {
 
 }
 
+function highlightBylineErrors() {
+    document.getElementById('bylineHighlightBtn').innerText = 'Tool running...'
+    expandSectionHeadings()
+    try {
+        let bylinesForHighlighting = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
+            .filter(item =>
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-video' &&
+                item.parentElement.parentElement.children[1].children[1].children[2].firstElementChild.classList[2] !== 'fa-volume-up')
+            .filter(item => {
+                let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').replace(/^By By|^By/i, '').split(' ').filter(x => x.length > 0)
+                return byline.length > 2 && !byline.includes('and') && !byline.includes('van') && !byline.includes('le')
+            })
+        bylinesForHighlighting.forEach(byline => {
+            let p = document.createElement('p')
+            p.style.textAlign = 'right'
+            p.style.paddingRight = '10px'
+            p.style.paddingTop = '5px'
+            p.style.fontSize = '13px'
+            p.style.color = 'white'
+            p.innerHTML = '<span style=\'background-color:#DAA520;\'>' + 'Possible byline error' + '</span>'
+
+            byline.appendChild(p)
+        })
+
+        document.getElementById('bylineHighlightBtn').innerText = 'Bylines highlighted!'
+        setTimeout(() => document.getElementById('bylineHighlightBtn').innerText = 'Highlight byline errors', 2000)
+    } catch (error) {
+        console.log(error)
+        document.getElementById('bylineHighlightBtn').innerText = 'Error encountered running tool'
+    }
+
+}
+
 function filterObj(obj) {
     return Object.keys(obj)
         .filter(key => obj[key].length > 1)
-        .reduce( (res, key) => (res[key] = obj[key], res), {} )
+        .reduce((res, key) => (res[key] = obj[key], res), {})
 }
 
 function fixPressSyndications() {
@@ -527,9 +543,9 @@ function fixPressSyndications() {
         expandSectionHeadings()
         let items = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item => item.className.search('standardMode') > -1 &&
-            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
-            (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted' ||
-             (/^Age|^The Saturday Age|^Sunday Age/).test(item.firstElementChild.firstElementChild.firstElementChild.children[1].innerText)))
+                item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
+                (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted' ||
+                    (/^Age|^The Saturday Age|^Sunday Age/).test(item.firstElementChild.firstElementChild.firstElementChild.children[1].innerText)))
 
         items.forEach(item => {
             if (item.children[1].firstElementChild.innerText === '') {
@@ -570,7 +586,7 @@ function expandSectionHeadings() {
     let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
         .filter(item =>
             item.className.search('standardMode') > -1 &&
-        item.className.search('mat-expanded') > -1)
+            item.className.search('mat-expanded') > -1)
 
     openedItems.forEach(item => {
         item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
@@ -796,7 +812,7 @@ async function checkingHighlights() {
             } else if (j > 0 && j < 5 && (word === 'The' || word === 'A')) {
                 itemContentWords[j] = `<span style='background-color:#8A2BE2;'>${itemContentWords[j]}</span>` // Possible subheading
             } else if (word === word.toLowerCase()) {
-                if ((properNouns.includes(toSentenceCase(word)) || skipDecapping.includes(word.toUpperCase()) || word === 'scomo')  && j < 4) {
+                if ((properNouns.includes(toSentenceCase(word)) || skipDecapping.includes(word.toUpperCase()) || word === 'scomo') && j < 4) {
                     itemContentWords[j] = `<span style='background-color:#00FF00;'>${itemContentWords[j]}</span>`
                 }
             }
@@ -891,7 +907,7 @@ function changeToSentenceCase() {
 
 function setFieldValue(data) {
     if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown' ||
-    (!lastHighlightedElement.parentElement.nodeName === 'MARK' && !lastHighlightedElement.parentElement.parentElement.parentElement.className  === 'readmore shown')) return
+        (!lastHighlightedElement.parentElement.nodeName === 'MARK' && !lastHighlightedElement.parentElement.parentElement.parentElement.className === 'readmore shown')) return
 
     let textBox = document.getSelection().baseNode.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
     let textBoxData = textBox.value.split('[...]')
@@ -914,23 +930,23 @@ function setFieldValue(data) {
 function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
-    case 'AllCaps':
-        if (text.length === 1) return text.toLowerCase()
-        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
-    case 'Title Case':
-        return text
-            .split(' ')
-            .map((word, index) => {
-                if (index === 0) return toSentenceCase(word)
-                else return word.toLowerCase()
-            })
-            .join(' ')
-    case 'Sentence case':
-        return text.toLowerCase()
-    case 'lower case':
-        return text.toUpperCase()
-    default:
-        return text
+        case 'AllCaps':
+            if (text.length === 1) return text.toLowerCase()
+            return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+        case 'Title Case':
+            return text
+                .split(' ')
+                .map((word, index) => {
+                    if (index === 0) return toSentenceCase(word)
+                    else return word.toLowerCase()
+                })
+                .join(' ')
+        case 'Sentence case':
+            return text.toLowerCase()
+        case 'lower case':
+            return text.toUpperCase()
+        default:
+            return text
     }
 
 }
@@ -950,15 +966,32 @@ async function archiveSelectedContent() {
 
     let archivedContent = await getArchivedContent()
     if (!archivedContent[currentPortal]) archivedContent[currentPortal] = []
-    const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
+
+    let itemIDs = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map(x => {
+        try {
+            if (x.parentElement.parentElement.childElementCount > 1) {
+                let itemBlock = [...x.parentElement.parentElement.children[1].children].filter(x => x.className === 'media-item-data-block')
+                return itemBlock[0].firstElementChild.children[1].children[0].innerText.slice(9)
+            } else return 'N/A'
+        } catch (error) {
+            return 'N/A'
+        }
+    })
+    console.log(itemIDs)
+    const selectedItems = [...document.getElementsByClassName('media-item-checkbox')].filter(x => x.parentElement && x.checked).map((x, ind) => {
         const outletName = x.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerText.replace(/ \(page [0-9]{1,}\)/, '')
         let headline
         if (x.parentElement.parentElement.parentElement.parentElement.className.startsWith('media-item-syndication')) {
             headline = x.parentElement.parentElement.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         } else headline = x.parentElement.parentElement.parentElement.children[0].children[1].innerText.slice(0, 90)
         headline = headline.replace(/’|‘/g, '\'')
+        if (archivedContent[currentPortal].includes(`${headline} ||| ${outletName}`)) itemIDs[ind] = null
+
         return `${headline} ||| ${outletName}`
     }).filter(x => !archivedContent[currentPortal].includes(x))
+    itemIDs = itemIDs.filter(x => x)
+    console.log(itemIDs)
+
     console.log(selectedItems.length)
     const archiveDate = new Date().toString()
     const groupOption = document.getElementsByClassName('content-options').length > 1 ? document.getElementsByClassName('content-options')[0].innerText.trimEnd() : 'N/A'
@@ -968,19 +1001,18 @@ async function archiveSelectedContent() {
 
     let selectedFolders = [...document.getElementsByClassName('checkbox-custom')].filter(x => /^Brands|^Competitors|^Personal|^Release Coverage|^Spokespeople/.test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart())
     if (selectedFolders.length === 0) return
-
+    selectedFolders = selectedFolders.join(', ')
     console.log(archivedContent)
+
     let detailedArchiveContent = await getDetailedArchivedContent()
     if (!detailedArchiveContent[currentPortal]) detailedArchiveContent[currentPortal] = {}
 
     archivedContent[currentPortal].push(selectedItems)
     archivedContent[currentPortal] = archivedContent[currentPortal].flat()
 
-    selectedItems.forEach(item => {
-        let detailedInfo = [archiveDate, groupOption, sortOption, groupings, tabs]
-        if (!detailedArchiveContent[currentPortal][item]) {
-            detailedArchiveContent[currentPortal][item] = detailedInfo
-        }
+    selectedItems.forEach((item, ind) => {
+        let detailedInfo = [archiveDate, groupOption, sortOption, groupings, tabs, itemIDs[ind], selectedFolders]
+        if (!detailedArchiveContent[currentPortal][item]) detailedArchiveContent[currentPortal][item] = detailedInfo
     })
 
     console.log(archivedContent)
@@ -988,10 +1020,10 @@ async function archiveSelectedContent() {
 
     lastAddedContent = [window.location.href.toString(), selectedItems]
 
-    chrome.storage.local.set({ archivedContent: archivedContent }, function() {
+    chrome.storage.local.set({ archivedContent: archivedContent }, function () {
     })
 
-    chrome.storage.local.set({ detailedArchiveContent: detailedArchiveContent }, function() {
+    chrome.storage.local.set({ detailedArchiveContent: detailedArchiveContent }, function () {
     })
 
 }
@@ -1016,7 +1048,7 @@ async function removeArchivedContent() {
     archivedContent[currentPortal] = archivedContent[currentPortal].filter(x => !selectedItems.includes(x))
     console.log(archivedContent)
 
-    chrome.storage.local.set({ archivedContent: archivedContent }, function() {
+    chrome.storage.local.set({ archivedContent: archivedContent }, function () {
     })
 }
 
@@ -1109,8 +1141,8 @@ async function createDBPlatformButtons() {
     div.style.padding = '10px'
     div.appendChild(label)
     div.appendChild(para)
-    let buttons = [['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'],  ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
-        ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
+    let buttons = [['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
+        ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
     for (let i = 0; i < buttons.length; i++) {
         div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
@@ -1142,7 +1174,7 @@ async function createDBPlatformButtons() {
 function createFeatureButton(innerText, onClickFunc, id) {
     let btn = document.createElement('button')
 
-    btn.setAttribute( 'style', 'font-size: 14px !important;' )
+    btn.setAttribute('style', 'font-size: 14px !important;')
     btn.className = 'mp-page-thin-button addButton mat-stroked-button mat-primary _mat-animation-noopable'
     btn.id = id
     btn.style.marginTop = '10px'
@@ -1159,12 +1191,12 @@ function createStaticTextField(text, parentDiv) {
     let input = document.createElement('input')
     input.className = 'link-name mat-input-element mat-form-field-autofill-control cdk-text-field-autofill-monitored ng-pristine ng-valid ng-touched static-text-field'
     input.value = text
-    input.setAttribute( 'style', 'padding: 5px !important;' )
+    input.setAttribute('style', 'padding: 5px !important;')
     div.appendChild(input)
 
     let span = document.createElement('SPAN')
     span.className = 'copy-icon mat-icon fa fa-clipboard mat-icon-no-color'
-    span.setAttribute( 'style', 'color: rgb(47, 164, 250) !important; line-height: 25px !important; padding-left: 10px' )
+    span.setAttribute('style', 'color: rgb(47, 164, 250) !important; line-height: 25px !important; padding-left: 10px')
     span.addEventListener('mousedown', copyStaticText)
     div.appendChild(span)
     parentDiv.appendChild(div)
@@ -1172,7 +1204,7 @@ function createStaticTextField(text, parentDiv) {
 
 function saveStaticText() {
     const staticTextVals = [...document.getElementsByClassName('static-text-field')].map(item => item.value)
-    chrome.storage.local.set({ staticText: staticTextVals }, function() {
+    chrome.storage.local.set({ staticText: staticTextVals }, function () {
     })
     document.getElementById('saveStaticTextBtn').innerText = 'Saved!'
     setTimeout(() => document.getElementById('saveStaticTextBtn').innerText = 'Save', 1000)
@@ -1300,7 +1332,7 @@ function getMPTabs() {
         chrome.runtime.sendMessage({
             action: 'logTabs',
             incog: chrome.extension.inIncognitoContext
-        }, function(tabs) {
+        }, function (tabs) {
             response(tabs.tabs)
         })
     })
