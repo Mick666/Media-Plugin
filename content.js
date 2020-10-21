@@ -930,23 +930,23 @@ function setFieldValue(data) {
 function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
-        case 'AllCaps':
-            if (text.length === 1) return text.toLowerCase()
-            return text.split(' ').map(word => toSentenceCase(word)).join(' ')
-        case 'Title Case':
-            return text
-                .split(' ')
-                .map((word, index) => {
-                    if (index === 0) return toSentenceCase(word)
-                    else return word.toLowerCase()
-                })
-                .join(' ')
-        case 'Sentence case':
-            return text.toLowerCase()
-        case 'lower case':
-            return text.toUpperCase()
-        default:
-            return text
+    case 'AllCaps':
+        if (text.length === 1) return text.toLowerCase()
+        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+    case 'Title Case':
+        return text
+            .split(' ')
+            .map((word, index) => {
+                if (index === 0) return toSentenceCase(word)
+                else return word.toLowerCase()
+            })
+            .join(' ')
+    case 'Sentence case':
+        return text.toLowerCase()
+    case 'lower case':
+        return text.toUpperCase()
+    default:
+        return text
     }
 
 }
@@ -1130,17 +1130,31 @@ function clickDelete() {
 }
 
 async function createDBPlatformButtons() {
+
+    fixSidebarProperties()
+
+    let sidebarSettings = await getSidebarSetting()
+
     let para = document.createElement('P')
     para.innerText = 'NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.'
 
     let label = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
     label.innerText = 'PLUGIN'
+    label.style.display = 'flex'
+    label.style.justifyContent = 'space-between'
+
+    let arrow = document.createElement('SPAN')
+    arrow.className = 'mat-expansion-indicator'
+    arrow.style.transform = 'rotate(0deg)'
 
     let div = document.createElement('DIV')
     div.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
     div.style.padding = '10px'
     div.appendChild(label)
     div.appendChild(para)
+
+    arrow.addEventListener('click', () => toggleSidebar(arrow, div, 'PluginButtons'))
+    label.appendChild(arrow)
     let buttons = [['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
         ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
@@ -1148,13 +1162,23 @@ async function createDBPlatformButtons() {
         div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
     }
 
+    [...div.children].forEach((el, ind) => {
+        if (ind === 0) return
+        el.style.display = sidebarSettings['PluginButtons'] ? '' : 'none'
+    })
+
     document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(div)
 
     let paraStatic = document.createElement('P')
-    paraStatic.innerText = 'Copy preset text to your clipboard by clicking the icon next to relevant field.\nYou can set the text that appears here in the extension options or by clicking save below.\n You can also set hotkeys in the options for these as well. '
+    paraStatic.innerText = 'Copy preset text to your clipboard by clicking the icon next to relevant field.\
+    \nYou can set the text that appears here in the extension options or by clicking save below.\
+    \n You can also set hotkeys in the options for these as well. '
 
     let labelStatic = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
     labelStatic.innerText = 'PRESET TEXT'
+    labelStatic.style.display = 'flex'
+    labelStatic.style.justifyContent = 'space-between'
+
 
     let divStatic = document.createElement('DIV')
     divStatic.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
@@ -1168,7 +1192,59 @@ async function createDBPlatformButtons() {
     staticSaveBtn.style.marginTop = '5px'
     divStatic.appendChild(staticSaveBtn)
 
+    let arrowStatic = document.createElement('SPAN')
+    arrowStatic.className = 'mat-expansion-indicator'
+    arrowStatic.style.transform = 'rotate(0deg)'
+    arrowStatic.addEventListener('click', () => toggleSidebar(arrowStatic, divStatic, 'PresetText'))
+    labelStatic.appendChild(arrowStatic)
+
+    let staticChildren = [...divStatic.children]
+
+    staticChildren.forEach((el, ind) => {
+        if (ind === 0) return
+        el.style.display = sidebarSettings['PresetText'] ? '' : 'none'
+    })
+
     document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(divStatic)
+}
+
+function fixSidebarProperties() {
+
+    const sidebarParent = document.getElementsByClassName('side-tools ng-star-inserted')[0]
+
+    sidebarParent.style.width = '100%'
+    sidebarParent.style.height = '100%'
+    sidebarParent.style.overflow = 'hidden'
+
+    const sidebarChild = document.getElementsByClassName('mp-page-inner-tools mp-form')[0]
+
+    sidebarChild.style.overflowX = 'hidden'
+    sidebarChild.style.overflowY = 'scroll'
+    sidebarChild.style.position = 'absolute'
+    sidebarChild.style.width = '94%'
+    sidebarChild.style.height = '100%'
+    sidebarChild.style.paddingRight = '17px'
+    sidebarChild.style.boxSizing = 'content-box'
+}
+
+async function toggleSidebar(source, element, label) {
+    let setting = await getSidebarSetting()
+
+    source.style.transform = source.style.transform === 'rotate(0deg)' ? 'rotate(180deg)' : 'rotate(0deg)'
+
+    let visibilitySetting = setting[label] ? 'none' : ''
+
+    let children = [...element.children]
+    children.forEach((el, ind) => {
+        if (ind === 0) return
+
+        el.style.display = visibilitySetting
+    })
+
+    setting[label] = !setting[label]
+
+    chrome.storage.local.set({ sidebarSetting: setting }, function () {
+    })
 }
 
 function createFeatureButton(innerText, onClickFunc, id) {
@@ -1350,6 +1426,14 @@ function getStaticText() {
     return new Promise(options => {
         chrome.storage.local.get({ staticText: defaultStaticTextArr }, function (data) {
             options(data.staticText)
+        })
+    })
+}
+
+function getSidebarSetting() {
+    return new Promise(options => {
+        chrome.storage.local.get({ sidebarSetting: { 'PluginButtons': true, 'PresetText': true } }, function (data) {
+            options(data.sidebarSetting)
         })
     })
 }
