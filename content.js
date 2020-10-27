@@ -357,7 +357,7 @@ chrome.storage.local.get({ readmoreScroll: true }, function (data) {
 function getPossibleSyndications() {
     let headlineObj = {}
     let bylineObj = {}
-    let syndColors = ['red', 'gold', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal']
+    let syndColors = ['red', 'yellow', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal', '#DAA520', 'seagreen', 'mediumspringgreen', 'lime', 'indigo', 'tan']
     let colorCount = 0
     document.getElementById('syndHighlightBtn').innerText = 'Tool running...'
     try {
@@ -1397,8 +1397,8 @@ function getLastContentReset() {
 
 function getNumberFix() {
     return new Promise(options => {
-        chrome.storage.local.get({ numberFix: true }, function (data) {
-            options(data.numberFix)
+        chrome.storage.local.get({ numberFixOptOut: true }, function (data) {
+            options(data.numberFixOptOut)
         })
     })
 }
@@ -1437,4 +1437,3 @@ function getSidebarSetting() {
         })
     })
 }
-

@@ -70,9 +70,9 @@ window.addEventListener('load', async () => {
     chrome.storage.local.get({ autoHighlight: true }, function(data){
         document.getElementById('autoHighlight').children[0].checked = data.autoHighlight
     })
-    chrome.storage.local.get({ numberFix: true }, function(data){
+    chrome.storage.local.get({ numberFixOptOut: false }, function(data){
         console.log(data)
-        document.getElementById('numberFix').children[0].checked = data.numberFix
+        document.getElementById('numberFix').children[0].checked = data.numberFixOptOut
     })
 
     loadTextFieldData()
@@ -122,10 +122,10 @@ document.getElementById('readmore').addEventListener('change', function(e) {
 
 document.getElementById('numberFix').addEventListener('change', function(e) {
     if (e.target.checked) {
-        chrome.storage.local.set({ numberFix: true }, function() {
+        chrome.storage.local.set({ numberFixOptOut: true }, function() {
         })
     } else {
-        chrome.storage.local.set({ numberFix: false }, function() {
+        chrome.storage.local.set({ numberFixOptOut: false }, function() {
         })
     }
 })
