@@ -32,10 +32,7 @@ window.onload = async function () {
     }
 
     if (browserURL.startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
-    // if (!currentPortal && browserURL !== 'https://www.mediaportal.com/' && !browserURL.startsWith('https://www.mediaportal.com/login.aspx') && browserURL.startsWith('https://app.mediaportal.com')) {
-    //     alert('Plugin error: The briefing login for this portal hasn\'t been saved. Please log out and into this portal to resolve this issue.\
-    //     \nIf you\'re still seeing this message after relogging, contact Michael.Martino@isentia.com. Note the unadded item tracker won\'t work with no login saved')
-    // }
+
     console.log(currentPortal)
 
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
@@ -62,6 +59,16 @@ window.onload = async function () {
     } else if (browserURL.startsWith('https://app.mediaportal.com/dailybriefings/#/report')) {
         waitForMP('flex flex-1 flex-direction-column mp-form-fieldset', createDBPlatformButtons)
         setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 500)
+    } else if (browserURL.startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
+        document.getElementsByClassName('control-area clearfix')[0].appendChild(createSearchButton())
+    }
+
+    if (!browserURL.startsWith('https://app.mediaportal.com/dailybriefings/#/briefings')) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.id === 'searchNavbarText') {
+                waitForMP('control-area clearfix', appendSearchButton)
+            }
+        })
     }
 }
 
@@ -134,6 +141,11 @@ document.addEventListener('mousedown', async function (e) {
         waitForMP('sorting dropdown', addHeadlineSortOptions)
     }
 
+    if (e.target.parentElement && e.target.parentElement.parentElement && e.target.parentElement.parentElement.className === 'dropdown-menu search-dropdown-menu') {
+        console.log('trying to create element')
+        waitForMP('control-area clearfix', appendSearchButton)
+    }
+
     if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple' || e.target.parentElement.parentElement.className === 'md-virtual-repeat-scroller')) {
         let setting = await getNumberFix()
         if (setting) waitForMPToLoad()
@@ -152,7 +164,7 @@ function waitForMP(classToCheck, fnc, maxRecursion = 15) {
         setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
         return
     }
-    console.log(document.getElementsByClassName(classToCheck).length)
+    console.log(document.getElementsByClassName(classToCheck))
     fnc()
 }
 
@@ -285,6 +297,39 @@ chrome.storage.local.get({ heroSentenceOption: true }, function (data) {
     }
 })
 
+function expandSearchResults() {
+    [...document.getElementsByClassName('btn-view-toggle')].filter(x => x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down').forEach(x => x.click())
+}
+
+function createSearchButton() {
+    const div = document.createElement('div')
+    div.style.paddingTop = '10px'
+    const input = document.createElement('input')
+    input.className = 'checkbox-custom'
+    input.type = 'checkbox'
+    div.appendChild(input)
+    const label = document.createElement('label')
+    label.className = 'checkbox-custom-label'
+    label.innerText = 'Expand results'
+
+    label.addEventListener('mousedown', (e) => {
+        if (e.target.parentElement.firstElementChild.checked) {
+            e.target.parentElement.firstElementChild.checked = false
+            document.removeEventListener('scroll', expandSearchResults)
+        } else {
+            e.target.parentElement.firstElementChild.checked = true
+            document.addEventListener('scroll', expandSearchResults)
+        }
+    })
+    div.appendChild(label)
+    return div
+}
+
+function appendSearchButton() {
+    document.getElementsByClassName('control-area clearfix')[0].appendChild(createSearchButton())
+}
+
+// 
 function func() {
     if (listenerOptions[0]) {
         let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
