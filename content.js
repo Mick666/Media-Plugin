@@ -37,9 +37,8 @@ window.onload = async function () {
 
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
-        if (document.getElementsByClassName('sorting dropdown').length > 0) {
-            addHeadlineSortOptions()
-        }
+        waitForMP('sorting dropdown', addHeadlineSortOptions)
+        waitForMP('media-item-header', removeOutletContactLinks)
     } else if (browserURL === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
         document.title = 'DB Platform'
     } else if (browserURL === 'https://app.mediaportal.com/#/monitor/media-coverage') {
@@ -88,11 +87,8 @@ document.addEventListener('mousedown', async function (e) {
         }
         else document.title = e.target.outerText.trimEnd()
 
-        setTimeout(function () {
-            if (document.getElementsByClassName('sorting dropdown').length > 0) {
-                addHeadlineSortOptions()
-            }
-        }, 2000)
+        waitForMP('sorting dropdown', addHeadlineSortOptions)
+        waitForMP('media-item-header', removeOutletContactLinks)
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK' || e.target.nodeName === 'A' && e.target.outerText === ' Coverage' ||
         e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
         document.addEventListener('scroll', func)
@@ -298,7 +294,16 @@ chrome.storage.local.get({ heroSentenceOption: true }, function (data) {
 })
 
 function expandSearchResults() {
-    [...document.getElementsByClassName('btn-view-toggle')].filter(x => x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down').forEach(x => x.click())
+    [...document.getElementsByClassName('btn-view-toggle')].filter(x => {
+        if (x.parentElement && x.parentElement.parentElement && x.parentElement.parentElement.parentElement &&
+            x.parentElement.parentElement.parentElement.parentElement &&
+            x.parentElement.parentElement.parentElement.parentElement.parentElement &&
+            /media-item-syndication/.test(x.parentElement.parentElement.parentElement.parentElement.parentElement.className)) {
+            return x.parentElement.parentElement.parentElement.parentElement.children[0] === x.parentElement.parentElement.parentElement &&
+                x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
+        }
+        return x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
+    }).forEach(x => x.click())
 }
 
 function createSearchButton() {
@@ -329,12 +334,15 @@ function appendSearchButton() {
     document.getElementsByClassName('control-area clearfix')[0].appendChild(createSearchButton())
 }
 
-// 
-function func() {
+const removeOutletContactLinks = () => {
     if (listenerOptions[0]) {
         let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
         links.map(link => link.href = '')
     }
+}
+
+function func() {
+    removeOutletContactLinks()
     greyOutAutomatedBroadcast()
 }
 
