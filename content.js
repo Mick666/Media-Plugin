@@ -15,6 +15,38 @@ let lastHighlightedElement = null
 let reclipObj = {}
 let currentPortal = null
 let lastAddedContent = []
+const datesForChecks = getLastThreeDates()
+const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydney Morning Herald', 'Sun Herald',
+    'Daily Telegraph', 'Sunday Telegraph', 'Age', 'Sunday Age', 'Herald Sun', 'Sunday Herald Sun', 'Canberra Times',
+    'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
+    'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
+    'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
+
+function getLastThreeDates() {
+    let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
+    let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
+    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
+    return [todaysDate, dayBefore, dayBeforeYesterday]
+}
+
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        if (request.action === 'getHighlightedText') {
+            sendResponse({ copy: window.getSelection().toString() })
+            lastHighlightedElement = document.getSelection().baseNode
+        } else if (request.action === 'changeCase') {
+            changeCase()
+        } else if (request.action === 'changeToSentenceCase') {
+            changeToSentenceCase()
+        } else if (request.action === 'setFieldValue') {
+            setFieldValue(request.data)
+        } else if (request.action === 'merge') {
+            clickMerge()
+        } else if (request.action === 'delete') {
+            clickDelete()
+        }
+    }
+)
 
 window.onload = async function () {
     const browserURL = window.location.href.toString()
@@ -43,7 +75,6 @@ window.onload = async function () {
         document.title = 'DB Platform'
     } else if (browserURL === 'https://app.mediaportal.com/#/monitor/media-coverage') {
         document.title = 'Mediaportal Coverage'
-        setTimeout(makeNumbersAccurate, 2000)
     } else if (browserURL === 'https://app.mediaportal.com/#/report-builder/view') {
         document.title = 'Report Builder'
         if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') createRPButton()
@@ -94,8 +125,6 @@ document.addEventListener('mousedown', async function (e) {
         document.addEventListener('scroll', func)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
-        let setting = await getNumberFix()
-        if (setting) waitForMPToLoad('lzy-header ng-scope', makeNumbersAccurate)
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
         document.removeEventListener('scroll', func)
         document.title = 'Report Builder'
@@ -142,36 +171,11 @@ document.addEventListener('mousedown', async function (e) {
         waitForMP('control-area clearfix', appendSearchButton)
     }
 
-    if (e.target.className === 'ng-binding ng-scope' && (e.target.innerText === 'APPLY' || e.target.parentElement.className === 'md-button ng-scope md-ink-ripple' || e.target.parentElement.parentElement.className === 'md-virtual-repeat-scroller')) {
-        let setting = await getNumberFix()
-        if (setting) waitForMPToLoad()
-    }
-
     if (e.target.className === 'mp-icon fas fa-play' || (e.target.className === 'mat-button-wrapper' && e.target.firstElementChild && e.target.firstElementChild.className === 'mp-icon fas fa-play')) {
         waitForMP('flex flex-1 flex-direction-column mp-form-fieldset', createDBPlatformButtons)
         setTimeout(() => document.getElementsByClassName('mat-slide-toggle-label')[0].addEventListener('mousedown', improveAccessibiltyOptions), 1000)
     }
 })
-
-function waitForMP(classToCheck, fnc, maxRecursion = 15) {
-    if (maxRecursion < 1) return
-    if (document.getElementsByClassName(classToCheck).length === 0) {
-        console.log('running loop...')
-        setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
-        return
-    }
-    console.log(document.getElementsByClassName(classToCheck))
-    fnc()
-}
-
-function waitForMPToLoad() {
-    if (document.getElementsByClassName('lzy-header ng-scope').length > 2) {
-        console.log('running loop...')
-        setTimeout(() => waitForMP, 1000)
-        return
-    }
-    makeNumbersAccurate()
-}
 
 if (window.location.href.toString() === 'https://www.mediaportal.com/' || window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
     document.addEventListener('keydown', async (e) => {
@@ -198,24 +202,16 @@ if (window.location.href.toString() === 'https://www.mediaportal.com/' || window
     })
 }
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        if (request.action === 'getHighlightedText') {
-            sendResponse({ copy: window.getSelection().toString() })
-            lastHighlightedElement = document.getSelection().baseNode
-        } else if (request.action === 'changeCase') {
-            changeCase()
-        } else if (request.action === 'changeToSentenceCase') {
-            changeToSentenceCase()
-        } else if (request.action === 'setFieldValue') {
-            setFieldValue(request.data)
-        } else if (request.action === 'merge') {
-            clickMerge()
-        } else if (request.action === 'delete') {
-            clickDelete()
-        }
+function waitForMP(classToCheck, fnc, maxRecursion = 15) {
+    if (maxRecursion < 1) return
+    if (document.getElementsByClassName(classToCheck).length === 0) {
+        console.log('running loop...')
+        setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
+        return
     }
-)
+    console.log(document.getElementsByClassName(classToCheck))
+    fnc()
+}
 
 function addHeadlineSortOptions() {
     document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
@@ -530,6 +526,27 @@ function fixBylines() {
             byline.dispatchEvent(textfieldUpdated)
         })
 
+        expandSectionHeadings()
+
+        let headlines = [...document.querySelectorAll('mat-expansion-panel')]
+            .filter(item => item.className.search('standardMode') > -1 &&
+            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
+            (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted') &&
+            /&#x27;/.test(item.children[0].children[0].children[0].children[0].innerText))
+
+        headlines.forEach(item => {
+            item.firstElementChild.click()
+            let headline = item.children[1].firstElementChild.firstElementChild.firstElementChild.children[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            headline.value = headline.value.replace(/&#x27;/g, '\'')
+
+            var textfieldUpdated = new Event('input', {
+                bubbles: true,
+                cancelable: true,
+            })
+
+            headline.dispatchEvent(textfieldUpdated)
+        })
+
         let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item =>
                 item.className.search('standardMode') > -1 &&
@@ -673,13 +690,80 @@ function highlightBroadcastItems() {
 
 }
 
+function getIndustrySyndNotesGrouped () {
+    document.getElementById('groupedIndSynd').innerText = 'Tool running...'
+    const selectedItems = document.getElementsByClassName('isSelected')
+    if (selectedItems.length !== 1) return
+    let childrenCount = selectedItems[0].children[1].children[0].children[1].children[0].children[0].children[0].children[3].children[1].children[2].children[2].childElementCount
+    let syndNotes = []
 
-const datesForChecks = getLastThreeDates()
-const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydney Morning Herald', 'Sun Herald',
-    'Daily Telegraph', 'Sunday Telegraph', 'Age', 'Sunday Age', 'Herald Sun', 'Sunday Herald Sun', 'Canberra Times',
-    'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
-    'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
-    'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
+    for (let i = 0; i < childrenCount; i++) {
+        document.getElementsByClassName('isSelected')[0].children[1].children[0].children[1].children[0].children[0].children[0].children[3].children[1].children[2].children[2].children[i].children[0].children[2].children[0].children[1].firstElementChild.click()
+
+        let currentSelectedItem = document.getElementsByClassName('isSelected')[0].children[1].children[0].children[1].children[0].children[0].children[0]
+        let headline = currentSelectedItem?.children[2].innerText.split('\n')[0].toUpperCase()
+        console.log(headline)
+        let sectionName = currentSelectedItem.children[3].children[1].children[0].innerText.split('\n').filter(row => row.startsWith('Program:'))[0].slice(8)
+        console.log(sectionName)
+        if (sectionName === 'Other') {
+            syndNotes.push(`${headline}, ${sectionName}`)
+        } else {
+            document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].click()
+            let metadata = document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].children[0].children[0].children[1].children[0].innerText.split(', ')
+            let pageNumber = metadata[metadata.length -1]
+            document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].click()
+            syndNotes.push(`${headline}, ${sectionName}, ${pageNumber}`)
+        }
+        document.getElementsByClassName('isSelected')[0].children[1].children[0].children[1].children[0].children[0].children[0].children[3].children[1].children[2].children[2].children[i].children[0].children[2].children[0].children[1].firstElementChild.click()
+    }
+    if (syndNotes.length === 0) return
+    let combinedSyndNotes
+    if (syndNotes.length === 1) {
+        combinedSyndNotes = syndNotes[0]
+    } else if (syndNotes.length === 2) {
+        combinedSyndNotes = syndNotes.join(', ')
+    } else {
+        combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length-1).join(', ')} and ${syndNotes[syndNotes.length-1]}`
+    }
+    chrome.runtime.sendMessage({
+        action: 'copyIndSyndNote',
+        syndNotes: combinedSyndNotes,
+    })
+    document.getElementById('groupedIndSynd').innerText = 'Synd note copied'
+    setTimeout(() => document.getElementById('groupedIndSynd').innerText = 'Create synd note - grouped', 2000)
+}
+
+function getIndustrySyndNotesUngrouped() {
+    document.getElementById('ungroupedIndSynd').innerText = 'Tool running...'
+
+    expandSectionHeadings()
+
+    const selectedItems = [...document.getElementsByClassName('isSelected')]
+    let syndNotes = []
+
+    selectedItems.forEach(item => {
+        let metadata = item.children[1].children[0].children[0].children[0].children[0].children[1].innerText.split('\n\n')[0].split(' , ')
+        if (metadata[1] === 'Other') syndNotes.push(`${metadata[0].toUpperCase()}, Online, ${metadata[metadata.length -1]}`)
+        else syndNotes.push(`${metadata[0].toUpperCase()}, ${metadata[1]}, ${metadata[metadata.length -1]}`)
+    })
+
+    if (syndNotes.length === 0) return
+    let combinedSyndNotes
+    if (syndNotes.length === 1) {
+        combinedSyndNotes = syndNotes[0]
+    } else if (syndNotes.length === 2) {
+        combinedSyndNotes = syndNotes.join(', ')
+    } else {
+        combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length-1).join(', ')} and ${syndNotes[syndNotes.length-1]}`
+    }
+    chrome.runtime.sendMessage({
+        action: 'copyIndSyndNote',
+        syndNotes: combinedSyndNotes,
+    })
+
+    document.getElementById('ungroupedIndSynd').innerText = 'Synd note copied'
+    setTimeout(() => document.getElementById('ungroupedIndSynd').innerText = 'Create synd note - ungrouped', 2000)
+}
 
 function cleanUpAuthorLines(byline, isIndustry) {
 
@@ -774,12 +858,6 @@ function checkContentDates(date, outlet, mediatype) {
     return date
 }
 
-function getLastThreeDates() {
-    let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
-    let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
-    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
-    return [todaysDate, dayBefore, dayBeforeYesterday]
-}
 
 
 function highlightHeadlines(headline, headlinesChecked) {
@@ -1215,6 +1293,14 @@ async function createDBPlatformButtons() {
         div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
     }
 
+    if (currentPortal === 'dailybriefings_innovation') {
+        let indSpecificButtons = [['Create synd note - grouped', getIndustrySyndNotesGrouped, 'groupedIndSynd'], ['Create synd note - ungrouped', getIndustrySyndNotesUngrouped, 'ungroupedIndSynd']]
+
+        for (let i = 0; i < indSpecificButtons.length; i++) {
+            div.appendChild(createFeatureButton(indSpecificButtons[i][0], indSpecificButtons[i][1], indSpecificButtons[i][2]))
+        }
+    }
+
     [...div.children].forEach((el, ind) => {
         if (ind === 0) return
         el.style.display = sidebarSettings['PluginButtons'] ? '' : 'none'
@@ -1353,40 +1439,6 @@ function copyStaticText(event) {
     setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
 }
 
-async function makeNumbersAccurate() {
-    if (document.getElementsByClassName('cov-meta meta-data ng-binding').length === 0 || document.getElementsByClassName('cov-meta meta-data ng-binding')[0].childElementCount === 0) return
-
-    let setting = await getNumberFix()
-    if (!setting) return
-    let personalFolders = [...document.getElementsByClassName('item-primary-panel')].filter(x => !/^Com­peti­tors|^Brands|^Per­sonal|^Spokes­peo­ple|^Re­lease Cov­er­age/.test(x.innerText))
-    let unreadTally = 0
-    let totalItemTally = 0
-    personalFolders.forEach(item => {
-        let correctChild = item.firstElementChild.children[2].childElementCount - 2
-
-        let numbers = item.firstElementChild.children[2].children[correctChild]
-
-        if (numbers.className === 'item-unread-count') {
-            if (numbers.innerText.split('\n').length === 2) {
-                numbers = numbers.innerText.split('\n').map(x => {
-                    if (/^[0-9]{1,} unread$|^[0-9]{1,} total$/.test(x)) return Number(x.replace(/[^0-9]/g, ''))
-                    else return 0
-                })
-            } else if (numbers.innerText.split('\n').length === 1 && /^[0-9]{1,} unread [0-9]{1,} total$/.test(numbers.innerText)) {
-                numbers = numbers.innerText.replace(/[^0-9 ]/g, '').split('  ').map(x => Number(x.replace(/[^0-9]/g, '')))
-            }
-
-        } else return
-
-        if (!isNaN(numbers[0])) unreadTally += numbers[0]
-        if (!isNaN(numbers[1])) totalItemTally += numbers[1]
-    })
-    console.log(`Unread items: ${unreadTally}, Total Items: ${totalItemTally}`)
-    document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[1].firstElementChild.innerText = unreadTally
-    document.getElementsByClassName('cov-meta meta-data ng-binding')[0].children[2].innerText = totalItemTally
-}
-
-
 chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         document.addEventListener('scroll', func)
@@ -1443,15 +1495,6 @@ function getLastContentReset() {
     return new Promise(options => {
         chrome.storage.local.get({ contentReset: 'September 30, 2020' }, function (data) {
             options(data.contentReset)
-        })
-    })
-}
-
-
-function getNumberFix() {
-    return new Promise(options => {
-        chrome.storage.local.get({ numberFixOptOut: true }, function (data) {
-            options(data.numberFixOptOut)
         })
     })
 }

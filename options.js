@@ -70,10 +70,6 @@ window.addEventListener('load', async () => {
     chrome.storage.local.get({ autoHighlight: true }, function(data){
         document.getElementById('autoHighlight').children[0].checked = data.autoHighlight
     })
-    chrome.storage.local.get({ numberFixOptOut: false }, function(data){
-        console.log(data)
-        document.getElementById('numberFix').children[0].checked = data.numberFixOptOut
-    })
 
     loadTextFieldData()
 })
@@ -116,16 +112,6 @@ document.getElementById('readmore').addEventListener('change', function(e) {
         })
     } else {
         chrome.storage.local.set({ readmoreScroll: false }, function() {
-        })
-    }
-})
-
-document.getElementById('numberFix').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        chrome.storage.local.set({ numberFixOptOut: true }, function() {
-        })
-    } else {
-        chrome.storage.local.set({ numberFixOptOut: false }, function() {
         })
     }
 })

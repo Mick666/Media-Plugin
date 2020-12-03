@@ -135,7 +135,7 @@ async function copy(str, setting, decap = true) {
         sandbox.select()
         document.execCommand('copy')
         sandbox.value = ('')
-    } else if (setting === 'copyStaticText') {
+    } else if (setting === 'copyStaticText' || setting === 'copyIndSyndNote') {
         sandbox.value = str
         sandbox.select()
         document.execCommand('copy')
@@ -268,6 +268,8 @@ chrome.runtime.onMessage.addListener(function(request) {
 
     } else if (request && request.action === 'copyStaticText') {
         copy(request.text, request.action)
+    }  else if (request && request.action === 'copyIndSyndNote') {
+        copy(request.syndNotes, request.action)
     }
 })
 
