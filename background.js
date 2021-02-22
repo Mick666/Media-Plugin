@@ -110,6 +110,7 @@ async function copy(str, setting, decap = true) {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
             .replace(/ Key points.*\n/, '\n')
+            .replace(/\.Key points.*\n/, '.\n')
             .split('\n')
             .filter(x => x.length > 0 &&
                 (x.endsWith('.') ||

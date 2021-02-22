@@ -16,62 +16,96 @@
             <button class="tablinks" id='smartDecapTab' data-key='smartdecap'>Smart decapping words</button>
           </div>
         <div id='options' class='tabcontent active'>
-            <div class="switchContainer">
-                Expand all broadcast items automatically:
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Expand all broadcast items automatically:
+                </div>
+                <label id="heroSentence" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="heroSentence" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Disable Media Outlet/Media Contact links (requires a page refresh):
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Disable Media Outlet/Media Contact links (requires a page refresh):
+                </div>
+                <label id="outlet-links" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="switch" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Grey out automated broadcast:
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Grey out automated broadcast:
+                </div>
+                <label id="automated" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="automated" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Grey out repeated items:
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Grey out repeated items:
+                </div>
+                <label id="repeated" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="repeated" class="switch listenerOptions">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Decapitalise text when using alternate copy shortcuts:
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Collapse media release/Guardian live items:
+                </div>
+                <label id="outletsToIgnore" class="switch listenerOptions">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="decap" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Replace text boxes when using alternate copy shortcuts, retaining any text after [...] :
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Decapitalise text when using alternate copy shortcuts:
+                </div>
+                <label id="decap" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="textBoxReplace" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Scroll back to the top of an item after clicking 'Read more':
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Replace text boxes when using alternate copy shortcuts, retaining any text after [...] :
+                </div>
+                <label id="textBoxReplace" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="readmore" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <div class="switchContainer">
-                Automatically highlight issues on the Preview page:
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Scroll back to the top of an item after clicking 'Read more':
+                </div>
+                <label id="readmore" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
             </div>
-            <label id="autoHighlight" class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Automatically highlight issues on the Preview page:
+                </div>
+                <label id="autoHighlight" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="flexRow">
+                <div class="switchContainer">
+                    Have a larger Add To Folder window:
+                </div>
+                <label id="largerAddToFolder" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
         <div id='hotkeys' class='tabcontent'>
             <div id="parentGrid">

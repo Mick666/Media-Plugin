@@ -10,7 +10,7 @@ const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
 const defaultStaticTextArr = ['Similar coverage reported by: ', 'Also in other publications', '', '', '', '', '', '', '', '']
 let seenIDs = []
-let listenerOptions = [true, true, true]
+let coverageOptions = { contactLinks: true, automatedBroadcast: true, repeatedItems: true, largerAddToFolder: true, outletsToIgnore: true }
 let lastHighlightedElement = null
 let reclipObj = {}
 let currentPortal = null
@@ -21,6 +21,7 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
     'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
     'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
+const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News']
 
 function getLastThreeDates() {
     let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
@@ -65,7 +66,31 @@ window.onload = async function () {
 
     if (browserURL.startsWith('https://app.mediaportal.com/')) currentPortal = await getCurrentPortal()
 
+    if (coverageOptions.largerAddToFolder) {
+        document.addEventListener('click', () => {
+            if (document.getElementsByClassName('modal-body standard-height-with-scroll ng-scope').length === 1) {
+                const addToFolderPopUp = document.getElementsByClassName('modal-body standard-height-with-scroll ng-scope')[0]
+                addToFolderPopUp.style.maxHeight = '75vh'
+                addToFolderPopUp.style.minHeight = '445px'
+                addToFolderPopUp.style.overflow = 'scroll'
+                addToFolderPopUp.className = addToFolderPopUp.className.replace('standard-height-with-scroll', '')
+            }
+        })
+    }
+
     console.log(currentPortal)
+
+    if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
+        document.addEventListener('scroll', func)
+        document.addEventListener('keydown', (e) => {
+            const addButton = [...document.getElementsByClassName('btn btn-primary')].filter(btn => btn.innerText === 'Add' && btn.className === 'btn btn-primary' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
+            const cancelButton = [...document.getElementsByClassName('btn btn-default')].filter(btn => btn.innerText === 'Cancel' && btn.className === 'btn btn-default' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
+            if (addButton && cancelButton && (e.key === 'Enter' || e.key === '`')) {
+                addButton.click()
+                cancelButton.click()
+            }
+        })
+    }
 
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
@@ -341,7 +366,7 @@ function appendSearchButton() {
 }
 
 const removeOutletContactLinks = () => {
-    if (listenerOptions[0]) {
+    if (coverageOptions.contactLinks) {
         let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
         links.map(link => link.href = '')
     }
@@ -355,21 +380,29 @@ function func() {
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
         .filter(item => !item.className.includes('edited')
+            && !item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.children[0]?.children[4]?.children[0]?.className.includes('edited')
             && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
             && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
 
     items.forEach(item => {
-        if (listenerOptions[1] && item.firstChild.innerText.startsWith('Item ID: R')) {
+        if (coverageOptions.automatedBroadcast && item.firstChild.innerText.startsWith('Item ID: R')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
-        } else if (listenerOptions[1] && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
+        } else if (coverageOptions.automatedBroadcast && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
-        } else if (listenerOptions[2] && !item.className.includes('master')) {
+        } else if (coverageOptions.outletsToIgnore && outletsToIgnore.includes(item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText)) {
+            console.log(item.className, item.className.endsWith('edited'))
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
+            console.log(item.className)
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
+        } else if (coverageOptions.repeatedItems && !item.className.includes('master')) {
             seenIDs.push(item.firstChild.innerText)
-            item.className += ' master'
+            item.className += ' master edited'
         } else {
             const headline = item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText.toLowerCase()
+            console.log(headline)
             const itemID = item.firstChild.innerText.slice(9)
             const sectionName = item.children[1].innerText.slice(9)
             const publicationName = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText.replace(/ \(page [0-9]{1,2}\)/, '')
@@ -380,6 +413,7 @@ function greyOutAutomatedBroadcast() {
                     if (reclipObj[key][2] && reclipObj[key][2].startsWith('Edition') && item.children[1] && !item.children[1].innerText.slice(9).startsWith('Edition')) {
                         item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
                         item.className += ' edited'
+                        item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
                     } else {
                         reclipObj[key][0].style.opacity = '0.5'
                         reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID]
@@ -391,6 +425,7 @@ function greyOutAutomatedBroadcast() {
                     } else {
                         item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
                         item.className += ' edited'
+                        item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
                     }
                 }
             } else {
@@ -398,6 +433,23 @@ function greyOutAutomatedBroadcast() {
             }
         }
     })
+
+    if ([...document.getElementsByClassName('mp-icon icon-compact-view')][0].parentElement.className.includes('active')) {
+        const items = [...document.getElementsByClassName('btn-view-toggle')].filter(item => !item.className.includes('edited'))
+        items.forEach(item => {
+            const outletName = item.parentElement.parentElement.children[3].firstElementChild.children[0].innerText
+            if (outletName === 'theguardian.com') {
+                const headline = item.parentElement.parentElement.parentElement.parentElement.children[0].children[1].firstElementChild
+                if (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail')) {
+                    item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                    item.className += ' edited'
+                }
+            } else if (outletsToIgnore.includes(outletName)) {
+                item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                item.className += ' edited'
+            }
+        })
+    }
 }
 
 function updatePlatformButtonText(id, newText) {
@@ -407,10 +459,20 @@ function updatePlatformButtonText(id, newText) {
     }
     const originalText = document.getElementById(id).innerText
 
-    !newText ? document.getElementById(id).innerText = 'Tool running...' :
-        document.getElementById(id).innerText = newText
+    document.getElementById(id).innerText = newText
 
     setTimeout(() => document.getElementById(id).innerText = originalText, 2000)
+}
+
+function closeOpenedItems() {
+    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
+        .filter(item =>
+            item.className.search('standardMode') > -1 &&
+        item.className.search('mat-expanded') > -1)
+    openedItems.forEach(item => {
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        item.parentElement.parentElement.firstElementChild.children[1].click()
+    })
 }
 
 function getPossibleSyndications() {
@@ -418,7 +480,6 @@ function getPossibleSyndications() {
     let bylineObj = {}
     let syndColors = ['red', 'yellow', 'darkgreen', 'purple', 'blue', 'pink', 'black', 'brown', 'Aquamarine', 'Orange', 'LightBlue', 'Teal', '#DAA520', 'seagreen', 'mediumspringgreen', 'lime', 'indigo', 'tan']
     let colorCount = 0
-    updatePlatformButtonText('syndHighlightBtn')
     try {
         expandSectionHeadings()
         let bylines = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')].filter(item =>
@@ -489,7 +550,6 @@ function getPossibleSyndications() {
 
 function fixBylines() {
     const bylineValues = ['for daily mail', 'for mailonline', 'political editor', 'education editor', 'and', 'editorial', 'alice man', 'editorial', 'aged care guru']
-    updatePlatformButtonText('bylineFixBtn')
     try {
 
         expandSectionHeadings()
@@ -502,7 +562,7 @@ function fixBylines() {
             .filter(item => {
                 let byline = item.innerText.split(' , ').filter(item => item.startsWith('By')).join('').slice(3)
                 return byline.length > 0 && (bylineValues.includes(byline.toLowerCase()) || byline.toUpperCase() === byline || /.* Mc[a-z]|.* Mac[a-z]/.test(byline) || byline === 'DANIEL McCULLOCH' ||
-                    /^by /i.test(byline))
+                    /^by /i.test(byline) || byline.endsWith(' '))
             })
         bylines.forEach(item => {
             item.click()
@@ -519,11 +579,13 @@ function fixBylines() {
                     if (p1) return 'Mc' + p1.toUpperCase()
                     else return 'Mac' + p2.toUpperCase()
                 }).trimEnd()
+            } else if (byline.value.endsWith(' ')) {
+                byline.value = byline.value.trimEnd()
             } else {
                 byline.value = byline.value.split(' ').map(word => toSentenceCase(word)).join(' ')
             }
 
-            byline.value = byline.value.replace(/ and /ig, ' and ')
+            byline.value = byline.value.replace(/ and /ig, ' and ').trimEnd()
 
             var textfieldUpdated = new Event('input', {
                 bubbles: true,
@@ -554,15 +616,7 @@ function fixBylines() {
             headline.dispatchEvent(textfieldUpdated)
         })
 
-        let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-            .filter(item =>
-                item.className.search('standardMode') > -1 &&
-                item.className.search('mat-expanded') > -1)
-
-        openedItems.forEach(item => {
-            item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-            item.parentElement.parentElement.firstElementChild.children[1].click()
-        })
+        closeOpenedItems()
 
         updatePlatformButtonText('bylineFixBtn', 'Bylines fixed!')
     } catch (error) {
@@ -573,7 +627,6 @@ function fixBylines() {
 }
 
 function highlightBylineErrors() {
-    updatePlatformButtonText('bylineHighlightBtn')
     expandSectionHeadings()
     try {
         let bylinesForHighlighting = [...document.getElementsByClassName('flex flex-1 author mp-page-ellipsis')]
@@ -612,7 +665,6 @@ function filterObj(obj) {
 }
 
 function fixPressSyndications() {
-    updatePlatformButtonText('fixPressBtn')
     try {
 
         expandSectionHeadings()
@@ -635,15 +687,7 @@ function fixPressSyndications() {
                 .children[1].children[2].children[2].children[0].firstElementChild.children[2].firstElementChild.children[1].firstElementChild.click() // Make parent
         })
 
-        let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-            .filter(item =>
-                item.className.search('standardMode') > -1 &&
-                item.className.search('mat-expanded') > -1)
-
-        openedItems.forEach(item => {
-            item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-            item.parentElement.parentElement.firstElementChild.children[1].click()
-        })
+        closeOpenedItems()
 
         updatePlatformButtonText('fixPressBtn', 'Press syndications fixed!')
     } catch (error) {
@@ -657,20 +701,21 @@ function expandSectionHeadings() {
     let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
     sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
 
-    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-        .filter(item =>
-            item.className.search('standardMode') > -1 &&
-            item.className.search('mat-expanded') > -1)
+    closeOpenedItems()
+}
 
-    openedItems.forEach(item => {
-        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-    })
+function expandSectionHeadingsBtn() {
+    try {
+        expandSectionHeadings()
+        updatePlatformButtonText('closeItemsBtn', 'Sections opened/Items closed')
+    } catch (error) {
+        console.error(error)
+        updatePlatformButtonText('closeItemsBtn', 'Error encountered running tool')
+    }
 }
 
 
 function highlightBroadcastItems() {
-
-    updatePlatformButtonText('highlightBroadcastBtn')
 
     try {
 
@@ -695,7 +740,6 @@ function highlightBroadcastItems() {
 }
 
 function getIndustrySyndNotesGrouped () {
-    updatePlatformButtonText('groupedIndSynd')
     const selectedItems = document.getElementsByClassName('isSelected')
     if (selectedItems.length !== 1) {
         updatePlatformButtonText('groupedIndSynd', 'Too many items selected')
@@ -747,7 +791,6 @@ function getIndustrySyndNotesGrouped () {
 }
 
 function getIndustrySyndNotesUngrouped() {
-    updatePlatformButtonText('ungroupedIndSynd')
     try {
         expandSectionHeadings()
 
@@ -777,6 +820,65 @@ function getIndustrySyndNotesUngrouped() {
         updatePlatformButtonText('ungroupedIndSynd', 'Error encountered running tool')
     }
 
+}
+
+function fixDHSAFRItems() {
+    try {
+        expandSectionHeadings()
+        const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
+            .filter(headline => headline.parentElement.children[1].children[0].innerText.startsWith('Australian Financial Review') && (/p[0-9]{1,2}$/).test(headline.parentElement.children[1].children[0].innerText))
+        console.log(headlines)
+        headlines.forEach(headline => {
+            headline.click()
+            const headlineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            headlineField.value = headlineField.value += ' (Subscription only)'
+            console.log(headlineField.value)
+            var textfieldUpdated = new Event('input', {
+                bubbles: true,
+                cancelable: true,
+            })
+
+            headlineField.dispatchEvent(textfieldUpdated)
+        })
+
+        closeOpenedItems()
+        updatePlatformButtonText('dhsAFR', 'AFR headlines fixed')
+    } catch (error) {
+        console.error(error)
+        updatePlatformButtonText('dhsAFR', 'Error encounteredrunning tool')
+    }
+}
+
+function appendColesIDs() {
+    try {
+        expandSectionHeadings()
+
+        const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
+        headlines.forEach(headline => {
+            console.log(headline.innerText)
+            const mediaType = headline.parentElement.children[1].children[1].children[2].firstElementChild
+            const childrenCount = (mediaType.classList[2] === ('fa-video') || mediaType.classList[2] === ('fa-volume-up')) ? 0 : 1
+            headline.click()
+            const bylineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0 + childrenCount].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            const itemID = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[2 + childrenCount].children[1].children[0].children[1].innerText.slice(11)
+
+            // const bylineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0 + childrenCount].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            // const itemID = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[2 + childrenCount].children[1].children[0].children[1].innerText.slice(11)
+
+            bylineField.value += `, ID: ${itemID}`
+            var textfieldUpdated = new Event('input', {
+                bubbles: true,
+                cancelable: true,
+            })
+
+            bylineField.dispatchEvent(textfieldUpdated)
+        })
+        closeOpenedItems()
+        updatePlatformButtonText('colesIDs', 'IDs appended')
+    } catch (error) {
+        console.error(error)
+        updatePlatformButtonText('colesIDs', 'Error encounteredrunning tool')
+    }
 }
 
 function cleanUpAuthorLines(byline, isIndustry) {
@@ -841,7 +943,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
         }
 
         if (byline[3].startsWith('Page ')) return byline
-        let splitByline = byline[3].split(' ')
+        let splitByline = byline[3].split(' ').filter(byline => byline.length > 0)
         if (byline[3].toUpperCase() === byline[3] && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[3])) {
             byline[3] = '<span style=\'background-color:#FDFF47;\'>' + byline[3] + '</span>'
         } else if (splitByline.length === 1 && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[3])) {
@@ -1295,7 +1397,7 @@ async function createDBPlatformButtons() {
 
     arrow.addEventListener('click', () => toggleSidebar(arrow, div, 'PluginButtons'))
     label.appendChild(arrow)
-    let buttons = [['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
+    let buttons = [['Open all sections/Close all items', expandSectionHeadingsBtn, 'closeItemsBtn'], ['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
         ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
     for (let i = 0; i < buttons.length; i++) {
@@ -1308,6 +1410,13 @@ async function createDBPlatformButtons() {
         for (let i = 0; i < indSpecificButtons.length; i++) {
             div.appendChild(createFeatureButton(indSpecificButtons[i][0], indSpecificButtons[i][1], indSpecificButtons[i][2]))
         }
+        const indResetButton = document.getElementsByClassName('resetButton')[0]
+        indResetButton.style.marginRight = '75px'
+        indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
+    } else if (currentPortal === 'training_centre' || currentPortal === 'dhs_center') {
+        div.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
+    } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
+        div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs,'appendColesIDs'))
     }
 
     [...div.children].forEach((el, ind) => {
@@ -1447,10 +1556,9 @@ function copyStaticText(event) {
     setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
 }
 
-chrome.storage.local.get({ listenerOptions: [true, true, true] }, function (data) {
+chrome.storage.local.get({ coverageOptions: coverageOptions }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
-        document.addEventListener('scroll', func)
-        listenerOptions = data.listenerOptions
+        coverageOptions = data.coverageOptions
     }
 })
 

@@ -8,11 +8,12 @@ const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morr
     'Mathias', 'Cormann', 'David', 'Littleproud', 'Sussan', 'Ley', 'Keith', 'Pitt', 'Trevor', 'Evans', 'Jonathon', 'Duniam', 'Simon', 'Birmingham', 'Alex',
     'Hawke', 'Christian', 'Porter', 'Richard', 'Colbeck', 'Coleman', 'Linda', 'Reynolds', 'Darren', 'Chester', 'Angus', 'Taylor', 'Stuart', 'Robert', 'JobKeeper', 'JobMaker', 'JobSeeker',
     'Melbourne', 'Sydney', 'Perth', 'Darwin', 'Adelaide', 'Brisbane', 'Hobart', 'Canberra', 'Coalition', 'Huawei', 'Premier', 'Dan', 'Tehan', 'Chinese']
+let coverageOptions = { contactLinks: true, automatedBroadcast: true, repeatedItems: true, largerAddToFolder: true, outletsToIgnore: true }
 
-function getEventListenerOptions() {
+function getCoveragePageOptions() {
     return new Promise(options => {
-        chrome.storage.local.get({ listenerOptions: [true, true, true] }, function(data){
-            options(data.listenerOptions)
+        chrome.storage.local.get({ coverageOptions: coverageOptions }, function(data){
+            options(data.coverageOptions)
         })
     })
 }
@@ -45,11 +46,12 @@ async function loadTextFieldData() {
 }
 
 window.addEventListener('load', async () => {
-    let listenerOptions = await getEventListenerOptions()
-    let optionCheckboxes = document.getElementsByClassName('listenerOptions')
-    for (let i = 0; i < optionCheckboxes.length; i++) {
-        optionCheckboxes[i].children[0].checked = listenerOptions[i]
-    }
+    let listenerOptions = await getCoveragePageOptions()
+    document.getElementById('outlet-links').children[0].checked = listenerOptions.contactLinks
+    document.getElementById('automated').children[0].checked = listenerOptions.automatedBroadcast
+    document.getElementById('repeated').children[0].checked = listenerOptions.repeatedItems
+    document.getElementById('outletsToIgnore').children[0].checked = listenerOptions.outletsToIgnore
+    document.getElementById('largerAddToFolder').children[0].checked = listenerOptions.largerAddToFolder
 
     chrome.storage.local.get({ heroSentenceOption: true }, function(data){
         document.getElementById('heroSentence').children[0].checked = data.heroSentenceOption
@@ -85,24 +87,38 @@ document.getElementById('heroSentence').addEventListener('change', async functio
     })
 })
 
-document.getElementById('switch').addEventListener('change', async function(e) {
-    let eventListenerOptions = await getEventListenerOptions()
-    eventListenerOptions[0] = e.target.checked
-    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
+document.getElementById('outlet-links').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getCoveragePageOptions()
+    eventListenerOptions.contactLinks = e.target.checked
+    chrome.storage.local.set({ coverageOptions: eventListenerOptions }, function() {
     })
 })
 
 document.getElementById('automated').addEventListener('change', async function(e) {
-    let eventListenerOptions = await getEventListenerOptions()
-    eventListenerOptions[1] = e.target.checked
-    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
+    let eventListenerOptions = await getCoveragePageOptions()
+    eventListenerOptions.automatedBroadcast = e.target.checked
+    chrome.storage.local.set({ coverageOptions: eventListenerOptions }, function() {
     })
 })
 
 document.getElementById('repeated').addEventListener('change', async function(e) {
-    let eventListenerOptions = await getEventListenerOptions()
-    eventListenerOptions[2] = e.target.checked
-    chrome.storage.local.set({ listenerOptions: eventListenerOptions }, function() {
+    let eventListenerOptions = await getCoveragePageOptions()
+    eventListenerOptions.repeatedItems = e.target.checked
+    chrome.storage.local.set({ coverageOptions: eventListenerOptions }, function() {
+    })
+})
+
+document.getElementById('outletsToIgnore').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getCoveragePageOptions()
+    eventListenerOptions.outletsToIgnore = e.target.checked
+    chrome.storage.local.set({ coverageOptions: eventListenerOptions }, function() {
+    })
+})
+
+document.getElementById('largerAddToFolder').addEventListener('change', async function(e) {
+    let eventListenerOptions = await getCoveragePageOptions()
+    eventListenerOptions.largerAddToFolder = e.target.checked
+    chrome.storage.local.set({ coverageOptions: eventListenerOptions }, function() {
     })
 })
 

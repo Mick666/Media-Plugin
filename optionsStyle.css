@@ -139,8 +139,7 @@ input:checked + .slider:before {
     padding-right: 20px;
 }
 #options {
-    display: grid;
-    grid-template-columns: auto auto;
+    display: block;
 }
 
 /* Style the tab */
@@ -182,3 +181,8 @@ input:checked + .slider:before {
     border: 1px solid #ccc;
     border-top: none;
   }
+.flexRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
