@@ -21,7 +21,7 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
     'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
     'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
-const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News']
+const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News', 'industry.gov.au', 'WEB MSN Australia']
 
 function getLastThreeDates() {
     let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
@@ -85,10 +85,11 @@ window.onload = async function () {
         document.addEventListener('keydown', (e) => {
             const addButton = [...document.getElementsByClassName('btn btn-primary')].filter(btn => btn.innerText === 'Add' && btn.className === 'btn btn-primary' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
             const cancelButton = [...document.getElementsByClassName('btn btn-default')].filter(btn => btn.innerText === 'Cancel' && btn.className === 'btn btn-default' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
-            if (addButton && cancelButton && (e.key === 'Enter' || e.key === '`')) {
+            const deselectButton = document.getElementsByClassName('btn-close')[0]
+            if (addButton && cancelButton && (e.key === 'Enter' || e.key === '`' && !e.altKey)) {
                 addButton.click()
                 cancelButton.click()
-            }
+            } else if (deselectButton && e.key === '`' && e.altKey || e.key === '/') deselectButton.click()
         })
     }
 
@@ -383,7 +384,6 @@ function greyOutAutomatedBroadcast() {
             && !item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.children[0]?.children[4]?.children[0]?.className.includes('edited')
             && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
             && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
-
     items.forEach(item => {
         if (coverageOptions.automatedBroadcast && item.firstChild.innerText.startsWith('Item ID: R')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
@@ -391,18 +391,12 @@ function greyOutAutomatedBroadcast() {
         } else if (coverageOptions.automatedBroadcast && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
             item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
             item.className += ' edited'
-        } else if (coverageOptions.outletsToIgnore && outletsToIgnore.includes(item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText)) {
-            console.log(item.className, item.className.endsWith('edited'))
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
-            console.log(item.className)
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
         } else if (coverageOptions.repeatedItems && !item.className.includes('master')) {
             seenIDs.push(item.firstChild.innerText)
-            item.className += ' master edited'
+            item.className += ' master'
+            console.log(seenIDs, item.className)
         } else {
             const headline = item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText.toLowerCase()
-            console.log(headline)
             const itemID = item.firstChild.innerText.slice(9)
             const sectionName = item.children[1].innerText.slice(9)
             const publicationName = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText.replace(/ \(page [0-9]{1,2}\)/, '')
@@ -432,15 +426,28 @@ function greyOutAutomatedBroadcast() {
                 reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID, sectionName]
             }
         }
+        const itemOutlet = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText
+        if (coverageOptions.outletsToIgnore && outletsToIgnore.includes(itemOutlet)) {
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
+        } else if (itemOutlet === 'theguardian.com') {
+            const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
+            if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
+                item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+                item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
+                item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
+            }
+        }
     })
 
-    if ([...document.getElementsByClassName('mp-icon icon-compact-view')][0].parentElement.className.includes('active')) {
+    if ([...document.getElementsByClassName('mp-icon icon-compact-view')][0]?.parentElement?.className.includes('active')) {
         const items = [...document.getElementsByClassName('btn-view-toggle')].filter(item => !item.className.includes('edited'))
         items.forEach(item => {
             const outletName = item.parentElement.parentElement.children[3].firstElementChild.children[0].innerText
             if (outletName === 'theguardian.com') {
-                const headline = item.parentElement.parentElement.parentElement.parentElement.children[0].children[1].firstElementChild
-                if (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail')) {
+                const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
+                if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
                     item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
                     item.className += ' edited'
                 }
@@ -464,14 +471,14 @@ function updatePlatformButtonText(id, newText) {
     setTimeout(() => document.getElementById(id).innerText = originalText, 2000)
 }
 
-function closeOpenedItems() {
+function closeOpenedItems(skipMarkAsUnread) {
     let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
         .filter(item =>
             item.className.search('standardMode') > -1 &&
         item.className.search('mat-expanded') > -1)
     openedItems.forEach(item => {
         item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        item.parentElement.parentElement.firstElementChild.children[1].click()
+        if (!skipMarkAsUnread) item.parentElement.parentElement.firstElementChild.children[1].click()
     })
 }
 
@@ -701,7 +708,7 @@ function expandSectionHeadings() {
     let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
     sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
 
-    closeOpenedItems()
+    closeOpenedItems(true)
 }
 
 function expandSectionHeadingsBtn() {

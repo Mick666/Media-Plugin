@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.6.8.6",
+    "version": "0.6.8.8",
     "options_page": "options.html",
     "content_scripts": [
         {
