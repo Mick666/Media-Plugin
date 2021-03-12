@@ -21,7 +21,7 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'Sunday Canberra Times', 'Courier Mail', 'Sunday Mail Brisbane', 'Adelaide Advertiser', 'Sunday Mail Adelaide',
     'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
     'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
-const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News', 'industry.gov.au', 'WEB MSN Australia']
+const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News', 'industry.gov.au', 'WEB MSN Australia', 'Commercial Real Estate', 'Premier of Tasmania', 'Media Releases']
 
 function getLastThreeDates() {
     let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
@@ -187,6 +187,17 @@ document.addEventListener('mousedown', async function (e) {
         setTimeout(createRPButton, 500)
     } else if (e.target.innerText === 'Search Now' && window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
         waitForMP('sorting dropdown', addHeadlineSortOptions)
+    }
+
+    if ((e.target?.parentElement?.className.includes('headerRow') && e.target?.parentElement?.className.includes('shown'))) {
+        console.log(e.target)
+        setTimeout(() => createRPCopyButtons(e.target), 500)
+    } else if (e.target?.parentElement?.className.includes('author') && e.target?.parentElement?.parentElement.className.includes('shown')) {
+        setTimeout(() => createRPCopyButtons(e.target, false, true), 500)
+    }
+    // eslint-disable-next-line quotes
+    else if (e.target?.className.includes('mat-expansion-indicator') && (e.target.style.transform === "rotate(0deg)" || e.target.style.transform === "")) {
+        setTimeout(() => createRPCopyButtons(e.target, true), 500)
     }
 
     if (e.target?.parentElement?.parentElement?.className === 'dropdown-menu search-dropdown-menu') {
@@ -888,6 +899,33 @@ function appendColesIDs() {
     }
 }
 
+function appendHAOnlineItems() {
+    try {
+        expandSectionHeadings()
+        const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
+            .filter(headline => headline?.parentElement.children[1]?.children[1]?.children[2]?.firstElementChild?.className.includes('fa-cloud'))
+        console.log(headlines)
+        headlines.forEach(headline => {
+            headline.click()
+            const headlineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            headlineField.value = headlineField.value += ' - ONLINE ONLY'
+            console.log(headlineField.value)
+            var textfieldUpdated = new Event('input', {
+                bubbles: true,
+                cancelable: true,
+            })
+
+            headlineField.dispatchEvent(textfieldUpdated)
+        })
+
+        closeOpenedItems()
+        updatePlatformButtonText('haOnline', 'Online headlines adjusted')
+    } catch (error) {
+        console.error(error)
+        updatePlatformButtonText('haOnline', 'Error encountered running tool')
+    }
+}
+
 function cleanUpAuthorLines(byline, isIndustry) {
 
     if (isIndustry) {
@@ -1349,6 +1387,25 @@ function createRPButton() {
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
 }
 
+function createRPCopyButtons(el, arrow, author) {
+    try {
+        const buttonSpan = arrow ? el.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1] :
+            author ? el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1] :
+                el.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1]
+        const linebreakButton = buttonSpan.children[1].cloneNode(true)
+        linebreakButton.innerText = 'Copy without linebreaks'
+        linebreakButton.addEventListener('click', copyWithoutLineBreaks)
+        buttonSpan.appendChild(linebreakButton)
+        const subheadingButton = buttonSpan.children[1].cloneNode(true)
+        subheadingButton.innerText = 'Copy without subheadings'
+        subheadingButton.addEventListener('click', copywithoutSubheadings)
+        buttonSpan.appendChild(subheadingButton)
+    } catch (error) {
+        console.error(error)
+    }
+
+}
+
 function improveAccessibiltyOptions() {
     if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
     let parentEle = document.getElementsByClassName('flex flex1 flex-direction-row align-items-center justify-content-space-between heading')[0].firstElementChild
@@ -1424,6 +1481,9 @@ async function createDBPlatformButtons() {
         div.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
     } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
         div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs,'appendColesIDs'))
+    } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
+        console.log('yep')
+        div.appendChild(createFeatureButton('Append online headlines', appendHAOnlineItems, 'haOnline'))
     }
 
     [...div.children].forEach((el, ind) => {
@@ -1561,6 +1621,22 @@ function copyStaticText(event) {
     let text = value
     event.target.parentElement.firstElementChild.value = 'Copied!'
     setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
+}
+
+function copyWithoutLineBreaks() {
+    chrome.runtime.sendMessage({
+        action: '1_paste',
+        copy: window.getSelection().toString()
+    })
+    lastHighlightedElement = document.getSelection().baseNode
+}
+
+function copywithoutSubheadings() {
+    chrome.runtime.sendMessage({
+        action: '2_abc',
+        copy: window.getSelection().toString()
+    })
+    lastHighlightedElement = document.getSelection().baseNode
 }
 
 chrome.storage.local.get({ coverageOptions: coverageOptions }, function (data) {

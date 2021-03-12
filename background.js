@@ -84,6 +84,7 @@ function getTextFieldReplace() {
 
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
 async function copy(str, setting, decap = true) {
+    console.log(str, setting)
     let properNouns = await getCopyPropers()
     let skipDecapping = await getCopyCaps()
     let textFieldReplaceOption = await getTextFieldReplace()
@@ -119,6 +120,10 @@ async function copy(str, setting, decap = true) {
                     x.endsWith('?') ||
                     x.endsWith('\'')
                 ))
+            .filter(x => !/^Get breaking news as it happens/.test(x) && !/^Get latest news and live notifications with the ABC News app/.test(x) &&
+            !/^Get the latest news and live notifications with the ABC News app/.test(x) && !/^Download App/.test(x) &&
+            !/^Space to play or pause, M to mute/.test(x) && !/^Download the ABC News app for all the latest./.test(x))
+            .map(x => x.startsWith('Download the ABC News app on the App Store ') ? x.replace('Download the ABC News app on the App Store ', '') : x)
             .join(' ').split(' ')
         if (decap) {
             for (let i = 0; i < 3 && i < words.length; i++) {
@@ -261,16 +266,20 @@ const toSentenceCase = (word) => word.split('').map((letter, index) => {
 }).join('')
 
 chrome.runtime.onMessage.addListener(function(request) {
-    if (request && request.action === 'createWindow' && request.url) {
+    console.log(request)
+    if (!request) return
+    if (request.action === 'createWindow' && request.url) {
         chrome.storage.local.set({ missingContent: request.missingItems, currentPortal: request.currentPortal }, function() {
             chrome.tabs.create({ url: request.url }, function () {
             })
         })
 
-    } else if (request && request.action === 'copyStaticText') {
+    } else if (request.action === 'copyStaticText') {
         copy(request.text, request.action)
-    }  else if (request && request.action === 'copyIndSyndNote') {
+    }  else if (request.action === 'copyIndSyndNote') {
         copy(request.syndNotes, request.action)
+    } else if (request.action === '1_paste' || request.action === '2_abc') {
+        copy(request.copy, request.action)
     }
 })
 
