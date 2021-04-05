@@ -87,6 +87,7 @@ window.onload = async function () {
             const cancelButton = [...document.getElementsByClassName('btn btn-default')].filter(btn => btn.innerText === 'Cancel' && btn.className === 'btn btn-default' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
             const deselectButton = document.getElementsByClassName('btn-close')[0]
             if (addButton && cancelButton && (e.key === 'Enter' || e.key === '`' && !e.altKey)) {
+                archiveSelectedContent()
                 addButton.click()
                 cancelButton.click()
             } else if (deselectButton && e.key === '`' && e.altKey || e.key === '/') deselectButton.click()
@@ -159,7 +160,7 @@ document.addEventListener('mousedown', async function (e) {
                 createRPButton()
             }
         }, 2000)
-    } else if (e.target.id === 'btnLogin') {
+    } else if (e.target.id === 'btnLogin' || e.target.className === 'css-17cjdhj' || e.target.className === 'css-1uaqxbn') {
         let lastReset = await getLastContentReset()
         let currentDate = new Date()
         let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
@@ -171,11 +172,12 @@ document.addEventListener('mousedown', async function (e) {
             chrome.storage.local.set({ detailedArchiveContent: {} }, function () {
             })
         }
+        const userName = document.getElementById('formField-0') ? document.getElementById('formField-0') : document.getElementById('txtUsername')
         if (chrome.extension.inIncognitoContext) {
-            chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function () {
+            chrome.storage.local.set({ currentPortalIncog: userName.value.toLowerCase() }, function () {
             })
         } else {
-            chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function () {
+            chrome.storage.local.set({ currentPortalRegular: userName.value.toLowerCase() }, function () {
             })
         }
     } else if (e.target?.parentElement?.className === 'modal-footer ng-scope' && e.target.innerText === 'Add') {
@@ -188,16 +190,12 @@ document.addEventListener('mousedown', async function (e) {
     } else if (e.target.innerText === 'Search Now' && window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
         waitForMP('sorting dropdown', addHeadlineSortOptions)
     }
-
-    if ((e.target?.parentElement?.className.includes('headerRow') && e.target?.parentElement?.className.includes('shown'))) {
-        console.log(e.target)
-        setTimeout(() => createRPCopyButtons(e.target), 500)
-    } else if (e.target?.parentElement?.className.includes('author') && e.target?.parentElement?.parentElement.className.includes('shown')) {
-        setTimeout(() => createRPCopyButtons(e.target, false, true), 500)
-    }
-    // eslint-disable-next-line quotes
-    else if (e.target?.className.includes('mat-expansion-indicator') && (e.target.style.transform === "rotate(0deg)" || e.target.style.transform === "")) {
-        setTimeout(() => createRPCopyButtons(e.target, true), 500)
+    if (e.target?.className === 'mp-page-thin-button mat-stroked-button mat-primary _mat-animation-noopable ng-star-inserted' && e.target?.parentElement?.className === 'flex flex-direction-row links') {
+        createRPCopyButtons(e.target.parentElement)
+    } else if (e.target?.className === 'mat-button-wrapper' && e.target?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
+        createRPCopyButtons(e.target.parentElement.parentElement)
+    } else if (e.target?.className === 'mp-icon fas fa-eye' && e.target?.parentElement?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
+        createRPCopyButtons(e.target.parentElement.parentElement.parentElement)
     }
 
     if (e.target?.parentElement?.parentElement?.className === 'dropdown-menu search-dropdown-menu') {
@@ -211,7 +209,10 @@ document.addEventListener('mousedown', async function (e) {
     }
 })
 
-if (window.location.href.toString() === 'https://www.mediaportal.com/' || window.location.href.toString() === 'https://www.mediaportal.com' || window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx')) {
+if (window.location.href.toString() === 'https://www.mediaportal.com/' ||
+    window.location.href.toString() === 'https://www.mediaportal.com' ||
+    window.location.href.toString().startsWith('https://www.mediaportal.com/login.aspx') ||
+    window.location.href.toString().startsWith('https://app.mediaportal.com/isentia/#/login')) {
     document.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             let lastReset = await getLastContentReset()
@@ -225,11 +226,12 @@ if (window.location.href.toString() === 'https://www.mediaportal.com/' || window
                 chrome.storage.local.set({ detailedArchiveContent: {} }, function () {
                 })
             }
+            const userName = document.getElementById('formField-0') ? document.getElementById('formField-0') : document.getElementById('txtUsername')
             if (chrome.extension.inIncognitoContext) {
-                chrome.storage.local.set({ currentPortalIncog: document.getElementById('txtUsername').value.toLowerCase() }, function () {
+                chrome.storage.local.set({ currentPortalIncog: userName.value.toLowerCase() }, function () {
                 })
             } else {
-                chrome.storage.local.set({ currentPortalRegular: document.getElementById('txtUsername').value.toLowerCase() }, function () {
+                chrome.storage.local.set({ currentPortalRegular: userName.value.toLowerCase() }, function () {
                 })
             }
         }
@@ -844,11 +846,13 @@ function fixDHSAFRItems() {
     try {
         expandSectionHeadings()
         const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
-            .filter(headline => headline.parentElement.children[1].children[0].innerText.startsWith('Australian Financial Review') && (/p[0-9]{1,2}$/).test(headline.parentElement.children[1].children[0].innerText))
+            .filter(headline => (headline.parentElement.children[1].children[0].innerText.startsWith('Australian Financial Review') || headline.parentElement.children[1].children[0].innerText.startsWith('AFR Weekend'))
+                && (/p[0-9]{1,2}$/).test(headline.parentElement.children[1].children[0].innerText))
         console.log(headlines)
         headlines.forEach(headline => {
             headline.click()
-            const headlineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            const headlineField = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[0]?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
+            if (!headlineField) return
             headlineField.value = headlineField.value += ' (Subscription only)'
             console.log(headlineField.value)
             var textfieldUpdated = new Event('input', {
@@ -877,11 +881,9 @@ function appendColesIDs() {
             const mediaType = headline.parentElement.children[1].children[1].children[2].firstElementChild
             const childrenCount = (mediaType.classList[2] === ('fa-video') || mediaType.classList[2] === ('fa-volume-up')) ? 0 : 1
             headline.click()
-            const bylineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0 + childrenCount].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
-            const itemID = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[2 + childrenCount].children[1].children[0].children[1].innerText.slice(11)
-
-            // const bylineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0 + childrenCount].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
-            // const itemID = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[2 + childrenCount].children[1].children[0].children[1].innerText.slice(11)
+            const bylineField = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[0 + childrenCount]?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
+            const itemID = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[2 + childrenCount]?.children[1]?.children[0]?.children[1]?.innerText?.slice(11)
+            if (!bylineField || !itemID) return
 
             bylineField.value += `, ID: ${itemID}`
             var textfieldUpdated = new Event('input', {
@@ -903,19 +905,24 @@ function appendHAOnlineItems() {
     try {
         expandSectionHeadings()
         const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
-            .filter(headline => headline?.parentElement.children[1]?.children[1]?.children[2]?.firstElementChild?.className.includes('fa-cloud'))
+            .filter(headline => headline?.parentElement?.children[1]?.children[1]?.children[2]?.firstElementChild?.className.includes('fa-cloud'))
         console.log(headlines)
         headlines.forEach(headline => {
-            headline.click()
-            const headlineField = headline.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
-            headlineField.value = headlineField.value += ' - ONLINE ONLY'
-            console.log(headlineField.value)
-            var textfieldUpdated = new Event('input', {
-                bubbles: true,
-                cancelable: true,
-            })
+            try {
+                headline.click()
+                const headlineField = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[0]?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
+                if (!headlineField) return
+                headlineField.value = headlineField.value += ' - ONLINE ONLY'
+                console.log(headlineField.value)
+                var textfieldUpdated = new Event('input', {
+                    bubbles: true,
+                    cancelable: true,
+                })
+                headlineField.dispatchEvent(textfieldUpdated)
+            } catch (error) {
+                return
+            }
 
-            headlineField.dispatchEvent(textfieldUpdated)
         })
 
         closeOpenedItems()
@@ -1387,19 +1394,17 @@ function createRPButton() {
     document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
 }
 
-function createRPCopyButtons(el, arrow, author) {
+function createRPCopyButtons(buttonDiv) {
     try {
-        const buttonSpan = arrow ? el.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1] :
-            author ? el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1] :
-                el.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].firstElementChild.firstElementChild.firstElementChild.children[3].firstElementChild.children[1]
-        const linebreakButton = buttonSpan.children[1].cloneNode(true)
+        if (buttonDiv.children[buttonDiv.children.length-1].innerText === 'Copy without subheadings') return
+        const linebreakButton = buttonDiv.children[1].cloneNode(true)
         linebreakButton.innerText = 'Copy without linebreaks'
         linebreakButton.addEventListener('click', copyWithoutLineBreaks)
-        buttonSpan.appendChild(linebreakButton)
-        const subheadingButton = buttonSpan.children[1].cloneNode(true)
+        buttonDiv.appendChild(linebreakButton)
+        const subheadingButton = buttonDiv.children[1].cloneNode(true)
         subheadingButton.innerText = 'Copy without subheadings'
         subheadingButton.addEventListener('click', copywithoutSubheadings)
-        buttonSpan.appendChild(subheadingButton)
+        buttonDiv.appendChild(subheadingButton)
     } catch (error) {
         console.error(error)
     }
@@ -1467,7 +1472,6 @@ async function createDBPlatformButtons() {
     for (let i = 0; i < buttons.length; i++) {
         div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
     }
-
     if (currentPortal === 'dailybriefings_innovation' || currentPortal === 'training_innovation2') {
         let indSpecificButtons = [['Create synd note - grouped', getIndustrySyndNotesGrouped, 'groupedIndSynd'], ['Create synd note - ungrouped', getIndustrySyndNotesUngrouped, 'ungroupedIndSynd']]
 
@@ -1477,7 +1481,8 @@ async function createDBPlatformButtons() {
         const indResetButton = document.getElementsByClassName('resetButton')[0]
         indResetButton.style.marginRight = '75px'
         indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
-    } else if (currentPortal === 'training_centre' || currentPortal === 'dhs_center') {
+    } else if (currentPortal === 'training_centre' || currentPortal === 'db_centre') {
+        console.log('test--------------')
         div.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
     } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
         div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs,'appendColesIDs'))
