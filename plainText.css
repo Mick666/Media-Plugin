@@ -1,0 +1,123 @@
+a {
+    color: #2f92ff;
+}
+
+.briefing-syndication, .briefing-syndication a {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: left;
+    color: #878787;
+}
+
+
+#briefing-title {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    text-align: left;
+    color: rgb(0, 0, 0);
+    margin-bottom: 20px;
+}
+
+#briefing-date {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1;
+    text-align: left;
+    color: rgb(0, 0, 0);
+}
+
+#briefing-note, .briefing-link {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1;
+    text-align: left;
+    color: black;
+}
+
+.briefing-anchorlink {
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#briefing-links-container {
+    margin-top: 50px;
+}
+
+.section-header {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 24px;
+    text-align: left;
+    text-transform: uppercase;
+    color: #313131;
+    margin-top: 60px;
+}
+
+.item-headline {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 20px;
+    text-align: left;
+    color: #222222;
+}
+
+.item-metadata {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: left;
+    color: rgb(135, 135, 135);
+}
+
+.item-paragraph {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: left;
+    color: rgb(49, 49, 49);
+}
+
+.copyright-title {
+    display: block;
+    margin: 13px 0;
+    font-size: 1.2em;
+}
+
+.copyright-text {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 14px;
+    text-align: left;
+    color: rgb(0, 0, 0);
+    margin: 13px 0;
+}
+
+#isentia-logo, #briefing-logo {
+    border: 0;
+    display: block;
+    outline: none;
+    text-decoration: none;
+    height: auto;
+    width: 100%;
+}
+
+body {
+    margin: 0;
+}
+
+.section-emptynote {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: left;
+    color: #313131;
+}
+
+.top-link {
+    margin-top: 20px;
+}

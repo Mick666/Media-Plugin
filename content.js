@@ -196,6 +196,9 @@ document.addEventListener('mousedown', async function (e) {
         createRPCopyButtons(e.target.parentElement.parentElement)
     } else if (e.target?.className === 'mp-icon fas fa-eye' && e.target?.parentElement?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
         createRPCopyButtons(e.target.parentElement.parentElement.parentElement)
+    } else if (e.target.innerText === 'Email' || e.target.className === 'mp-icon fas fa-envelope') {
+        closeOpenedItems(true)
+        checkBriefing()
     }
 
     if (e.target?.parentElement?.parentElement?.className === 'dropdown-menu search-dropdown-menu') {
@@ -485,13 +488,18 @@ function updatePlatformButtonText(id, newText) {
 }
 
 function closeOpenedItems(skipMarkAsUnread) {
-    let openedItems = [...document.querySelectorAll('mat-expansion-panel')]
-        .filter(item =>
-            item.className.search('standardMode') > -1 &&
-        item.className.search('mat-expanded') > -1)
+    const briefingSections = [...document.querySelectorAll('mp-report-section')]
+        .filter(section => !section.firstElementChild.firstElementChild.className.includes('mat-expanded'))
+
+    briefingSections.forEach(section => section.firstElementChild.firstElementChild.firstElementChild.click())
+
+    let openedItems = [...document.querySelectorAll('mp-mediaitem-card')]
+        .filter(item => item.firstElementChild.className.includes('mat-expanded'))
+    console.log(openedItems)
+
     openedItems.forEach(item => {
-        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        if (!skipMarkAsUnread) item.parentElement.parentElement.firstElementChild.children[1].click()
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        if (!skipMarkAsUnread) item.parentElement.firstElementChild.children[1].click()
     })
 }
 
@@ -619,9 +627,9 @@ function fixBylines() {
 
         let headlines = [...document.querySelectorAll('mat-expansion-panel')]
             .filter(item => item.className.search('standardMode') > -1 &&
-            item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
-            (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted') &&
-            /&#x27;/.test(item.children[0].children[0].children[0].children[0].innerText))
+                item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild &&
+                (item.firstElementChild.firstElementChild.firstElementChild.children[1].children[1].children[2].firstElementChild.className === 'mat-icon fa fa-cloud mat-icon-no-color ng-star-inserted') &&
+                /&#x27;/.test(item.children[0].children[0].children[0].children[0].innerText))
 
         headlines.forEach(item => {
             item.firstElementChild.click()
@@ -759,7 +767,7 @@ function highlightBroadcastItems() {
 
 }
 
-function getIndustrySyndNotesGrouped () {
+function getIndustrySyndNotesGrouped() {
     const selectedItems = document.getElementsByClassName('isSelected')
     if (selectedItems.length !== 1) {
         updatePlatformButtonText('groupedIndSynd', 'Too many items selected')
@@ -782,7 +790,7 @@ function getIndustrySyndNotesGrouped () {
             } else {
                 document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].click()
                 let metadata = document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].children[0].children[0].children[1].children[0].innerText.split(', ')
-                let pageNumber = metadata[metadata.length -1]
+                let pageNumber = metadata[metadata.length - 1]
                 document.getElementsByClassName('isSelected')[0].children[1].children[0].children[0].click()
                 syndNotes.push(`${headline}, ${sectionName}, ${pageNumber}`)
             }
@@ -796,7 +804,7 @@ function getIndustrySyndNotesGrouped () {
         } else if (syndNotes.length === 2) {
             combinedSyndNotes = syndNotes.join(', ')
         } else {
-            combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length-1).join(', ')} and ${syndNotes[syndNotes.length-1]}`
+            combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length - 1).join(', ')} and ${syndNotes[syndNotes.length - 1]}`
         }
         chrome.runtime.sendMessage({
             action: 'copyIndSyndNote',
@@ -818,8 +826,8 @@ function getIndustrySyndNotesUngrouped() {
         let syndNotes = []
         selectedItems.forEach(item => {
             let metadata = item.children[1].children[0].children[0].children[0].children[0].children[1].innerText.split('\n\n')[0].split(' , ')
-            if (metadata[1] === 'Other') syndNotes.push(`${metadata[0].toUpperCase()}, Online, ${metadata[metadata.length -1]}`)
-            else syndNotes.push(`${metadata[0].toUpperCase()}, ${metadata[1]}, ${metadata[metadata.length -1]}`)
+            if (metadata[1] === 'Other') syndNotes.push(`${metadata[0].toUpperCase()}, Online, ${metadata[metadata.length - 1]}`)
+            else syndNotes.push(`${metadata[0].toUpperCase()}, ${metadata[1]}, ${metadata[metadata.length - 1]}`)
         })
         if (syndNotes.length === 0) return
         let combinedSyndNotes
@@ -828,7 +836,7 @@ function getIndustrySyndNotesUngrouped() {
         } else if (syndNotes.length === 2) {
             combinedSyndNotes = syndNotes.join(', ')
         } else {
-            combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length-1).join(', ')} and ${syndNotes[syndNotes.length-1]}`
+            combinedSyndNotes = `${syndNotes.slice(0, syndNotes.length - 1).join(', ')} and ${syndNotes[syndNotes.length - 1]}`
         }
         chrome.runtime.sendMessage({
             action: 'copyIndSyndNote',
@@ -1044,6 +1052,7 @@ function highlightHeadlines(headline, headlinesChecked) {
 
 async function checkingHighlights() {
     if (!window.location.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) return
+    if (document.getElementsByClassName('hide-on-mobile').length > 0) createPlainTextButton()
     let skipDecapping = await getCheckingCaps()
     let properNouns = await getCheckingPropers()
     let links = document.querySelectorAll('a')
@@ -1123,6 +1132,65 @@ async function checkingHighlights() {
 
         itemSummaries[i].firstElementChild.firstElementChild.innerHTML = itemContentWords.join(' ')
     }
+}
+
+function createPlainTextButton() {
+    const button = document.createElement('button')
+    button.innerText = 'Create Plain Text version'
+    button.style.position = 'absolute'
+    button.style.top = '0'
+    button.style.left = '0'
+    button.addEventListener('click', createPlainTextPreview)
+    document.querySelector('body').appendChild(button)
+}
+
+function createPlainTextPreview() {
+    const briefingData = {
+        briefingImage: document.querySelectorAll('img')[1].src,
+        title: document.getElementsByClassName('mj-hero-content')[0].innerText.slice(4),
+        date: document.getElementsByClassName('mj-column-per-50 outlook-group-fix')[0].innerText,
+        pdfLink: document.getElementsByClassName('mj-column-per-100 outlook-group-fix')[6].innerText === 'LINKS' ? getPDFLinks() : null,
+        anchorLinks: document.getElementsByClassName('hide-on-mobile')[0].innerText.split('   |   '),
+        sections: getSectionItems(document.getElementsByClassName('hide-on-mobile')[0].innerText.split('   |   '))
+    }
+    chrome.runtime.sendMessage({
+        action: 'plainTextEmail',
+        url: 'plainText.html',
+        briefingData: briefingData
+    })
+}
+
+function getSectionItems(sectionNames) {
+    const sections = sectionNames.reduce((acc,curr) => (acc[curr.toUpperCase()] = [], acc), {})
+    const items = [...document.getElementsByClassName('item-headline-hook')]
+
+    items.forEach(item => {
+        const section = item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].innerText
+        const completeItem = {
+            headline: item.innerText,
+            metadata: item.parentElement.parentElement.children[1].firstElementChild.innerText,
+            summary: item.parentElement.parentElement.children[2].innerText,
+            readMoreLink: [
+                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1].firstElementChild.firstElementChild.firstElementChild.innerText,
+                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1].firstElementChild.firstElementChild.firstElementChild.href
+            ],
+            syndicationLinks: item.parentElement.parentElement.childElementCount === 5 ? item.parentElement.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerHTML : null
+        }
+        sections[section].push(completeItem)
+    })
+    return sections
+}
+
+function getPDFLinks() {
+    const links = [...document.getElementsByClassName('large-block-of-text')]
+        .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
+            ?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.nodeName === 'A')
+        .map(link => {
+            const linkEl = link.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+                .firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+            return [linkEl.innerText, linkEl.href]
+        })
+    return links
 }
 
 const toSentenceCase = (word) => word.split('').map((letter, index) => {
@@ -1229,23 +1297,23 @@ function setFieldValue(data) {
 function changeSelectedText(text) {
     const currentCapitalisation = getCapitalisation(text)
     switch (currentCapitalisation) {
-    case 'AllCaps':
-        if (text.length === 1) return text.toLowerCase()
-        return text.split(' ').map(word => toSentenceCase(word)).join(' ')
-    case 'Title Case':
-        return text
-            .split(' ')
-            .map((word, index) => {
-                if (index === 0) return toSentenceCase(word)
-                else return word.toLowerCase()
-            })
-            .join(' ')
-    case 'Sentence case':
-        return text.toLowerCase()
-    case 'lower case':
-        return text.toUpperCase()
-    default:
-        return text
+        case 'AllCaps':
+            if (text.length === 1) return text.toLowerCase()
+            return text.split(' ').map(word => toSentenceCase(word)).join(' ')
+        case 'Title Case':
+            return text
+                .split(' ')
+                .map((word, index) => {
+                    if (index === 0) return toSentenceCase(word)
+                    else return word.toLowerCase()
+                })
+                .join(' ')
+        case 'Sentence case':
+            return text.toLowerCase()
+        case 'lower case':
+            return text.toUpperCase()
+        default:
+            return text
     }
 
 }
@@ -1396,7 +1464,7 @@ function createRPButton() {
 
 function createRPCopyButtons(buttonDiv) {
     try {
-        if (buttonDiv.children[buttonDiv.children.length-1].innerText === 'Copy without subheadings') return
+        if (buttonDiv.children[buttonDiv.children.length - 1].innerText === 'Copy without subheadings') return
         const linebreakButton = buttonDiv.children[1].cloneNode(true)
         linebreakButton.innerText = 'Copy without linebreaks'
         linebreakButton.addEventListener('click', copyWithoutLineBreaks)
@@ -1482,12 +1550,10 @@ async function createDBPlatformButtons() {
         indResetButton.style.marginRight = '75px'
         indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
     } else if (currentPortal === 'training_centre' || currentPortal === 'db_centre') {
-        console.log('test--------------')
         div.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
     } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
-        div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs,'appendColesIDs'))
+        div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs, 'appendColesIDs'))
     } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
-        console.log('yep')
         div.appendChild(createFeatureButton('Append online headlines', appendHAOnlineItems, 'haOnline'))
     }
 
@@ -1644,11 +1710,181 @@ function copywithoutSubheadings() {
     lastHighlightedElement = document.getSelection().baseNode
 }
 
+async function checkBriefing() {
+    const checkData = await getBriefingCheck(currentPortal)
+
+    let errors = []
+
+    if (!checkData) checkForErrors(null)
+    else {
+        if (checkData.subjectLineCantInclude) {
+            if (document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.subjectLineCantInclude)) {
+                errors.push('Subject line needs updating')
+            }
+        }
+        if (checkData.briefingNameCantInclude) {
+            if (document.getElementsByClassName('titleFormField')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.briefingNameCantInclude)) {
+                errors.push('Report title needs updating')
+            }
+        }
+        if (checkData.multipleBriefings) {
+            const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+            if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
+            else (checkForErrors(null))
+        } else checkForErrors(checkData)
+    }
+
+    if (errors.length === 0) return
+    setTimeout(() => showErrors(errors), 250)
+
+    function checkForErrors(checkData) {
+
+        const links = [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].children]
+            .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].childElementCount - 1)
+            .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.checked)
+            .map(link => link.firstElementChild.children[1].firstElementChild.value)
+
+        if (document.getElementsByClassName('mp-form-fieldset ng-star-inserted')[0]?.firstElementChild?.innerText === 'SEND TIME' &&
+            !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
+            errors.push('Send time not checked')
+        }
+        const filteredLinks = links.filter(link => link.startsWith('MonitorReport-'))
+        if (filteredLinks.length > 0) {
+            errors.push('One or more PDF Links need renaming')
+        }
+
+        if (!checkData) return
+        const items = getItems()
+        const attachments = getAttachments()
+
+        if (checkData.headlineAppend) {
+            if (checkData.headlineAppend.outlets) {
+                const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
+                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
+                    errors.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
+                }
+            } else if (checkData.headlineAppend.mediaTypes) {
+                const relevantOutlets = items.filter(item => checkData.headlineAppend.mediaTypes.includes(item.mediaType))
+                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
+                    errors.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
+                }
+            }
+        }
+
+        if (checkData.excludeOutlets && items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet)).length > 0) {
+            const badOutlets = new Set()
+            const badItems = items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet))
+            badItems.forEach(item => badOutlets.add(item.mediaOutlet))
+            errors.push(`${[...badOutlets].join(', ')} cannot be included in this briefing, but have been`)
+        }
+
+        if (checkData.pdfs) {
+            const missingPDFs = checkData.pdfs.filter(pdf => !links.includes(pdf))
+            if (missingPDFs.length > 0) {
+                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+            }
+        }
+
+        if (checkData.excludePDFs) {
+            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf))
+            if (missingPDFs.length > 0) {
+                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+            }
+        }
+
+        if (checkData.attachments) {
+            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => {
+                console.log(briefingAttachment.startsWith(attachment), attachment)
+                return briefingAttachment.startsWith(attachment)
+            }))
+            if (missingAttachments.length > 0) {
+                errors.push(`Missing the following attachments:\n        \u2022          ${missingAttachments.join('\n\u2022          ')}`)
+            }
+        }
+    }
+}
+
+
+const getAttachments = () => {
+    return [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
+        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)
+        .filter(attachment => attachment.innerText !== '' && attachment.innerText !== 'Briefing PDF')
+        .map(attachment => attachment.innerText)
+}
+
+const getItems = () => {
+    const rawItems = [...document.getElementsByClassName('mat-content')].filter(item => item.firstElementChild.className === 'flex flex-1 flex-direction-column')
+
+    return rawItems.map(item => {
+        return {
+            headline: item.firstElementChild.firstElementChild.innerText,
+            mediaType: getMediaType(item?.firstElementChild?.children[1]?.children[1]?.children[2]?.firstElementChild?.className),
+            mediaOutlet: item?.firstElementChild?.children[1]?.firstElementChild?.innerText && item?.firstElementChild?.children[1]?.firstElementChild?.innerText.length > 0 ? item?.firstElementChild?.children[1]?.firstElementChild?.innerText.split(' ,')[0] : null
+        }
+    })
+}
+
+const getMediaType = (className) => {
+    if (!className) return null
+
+    if (className.includes('fa-file-alt')) return 'print'
+    else if (className.includes('fa-cloud')) return 'online'
+    else if (className.includes('fa-volume-up')) return 'radio'
+    else if (className.includes('fa-video')) return 'television'
+    else return 'other'
+}
+
+
+function showErrors(errors) {
+    const parentDiv = document.createElement('div')
+    const headerDiv = document.createElement('div')
+    const title = document.createElement('b')
+    title.innerText = 'Several possible errors detected'
+    title.style.color = 'red'
+    const button = document.createElement('button')
+    button.innerText = 'more'
+    button.addEventListener('click',((e) => {
+        e.target.parentElement.parentElement.children[1].style.display = e.target.parentElement.parentElement.children[1].style.display === 'block' ? 'none' : 'block'
+        e.target.innerText = e.target.innerText === 'more' ? 'less' : 'more'
+    }))
+    button.style.marginLeft = '10px'
+    headerDiv.style.display = 'flex'
+    headerDiv.appendChild(title)
+    headerDiv.appendChild(button)
+    parentDiv.appendChild(headerDiv)
+    parentDiv.style.marginTop = '20px'
+
+    const errorContainer = document.createElement('ul')
+    errorContainer.style.display = 'none'
+    errors.forEach(error => {
+        const errorMessage = document.createElement('li')
+        errorMessage.innerText = error
+        errorContainer.appendChild(errorMessage)
+    })
+    parentDiv.appendChild(errorContainer)
+    if (!document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0]) {
+        setTimeout(() => document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv), 250)
+    } else {
+        document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv)
+    }
+}
+
 chrome.storage.local.get({ coverageOptions: coverageOptions }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         coverageOptions = data.coverageOptions
     }
 })
+
+function getBriefingCheck(briefingLogin) {
+    return new Promise(response => {
+        chrome.runtime.sendMessage({
+            action: 'getBriefingCheck',
+            data: briefingLogin
+        }, function (check) {
+            response(check?.briefingChecks)
+        })
+    })
+}
 
 function getCheckingCaps() {
     return new Promise(options => {

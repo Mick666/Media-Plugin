@@ -1,41 +1,49 @@
 module.exports = {
-    "env": {
-        "browser": true,
-        "es2021": true
+    'env': {
+        'browser': true,
+        'es6': true
     },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 12,
-        "sourceType": "module"
+    'extends': [
+        'eslint:recommended',
+        'plugin:react/recommended'
+    ],
+    'parserOptions': {
+        'ecmaFeatures': {
+            'jsx': true
+        },
+        'ecmaVersion': 2020,
+        'sourceType': 'module'
     },
-    "rules": {
-        "indent": [
-            "error",
-            4  
+    'rules': {
+        'indent': [
+            'warn', 4,
+            { 'SwitchCase': 1 }
         ],
-        "linebreak-style": [
-            "error",
-            "unix"
+        'no-unused-vars': 'warn',
+        'linebreak-style': [
+            'warn',
+            'unix'
         ],
-        "quotes": [
-            "error",
-            "single"
+        'quotes': [
+            'warn',
+            'single'
         ],
-        "semi": [
-            "error",
-            "never"
+        'semi': [
+            'warn',
+            'never'
         ],
-        "eqeqeq": "error",
-        "no-trailing-spaces": "error",
-        "object-curly-spacing": [
-            "error", "always"
+        'eqeqeq': 'warn',
+        'no-trailing-spaces': 'warn',
+        'object-curly-spacing': [
+            'warn', 'always'
         ],
-        "arrow-spacing": [
-            "error", { "before": true, "after": true }
+        'arrow-spacing': [
+            'warn', { 'before': true, 'after': true }
         ],
-        "no-console": 0,
-        "react/prop-types": 0
-    }, "globals": {
-        "chrome": "readonly"
+        'no-console': 0,
+        'react/prop-types': 0
+    }, 'globals': {
+        'module': 'readonly',
+        'chrome': 'readonly'
     }
-};
+}

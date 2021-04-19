@@ -274,6 +274,11 @@ chrome.runtime.onMessage.addListener(function(request) {
             })
         })
 
+    } else if (request.action === 'plainTextEmail' && request.url) {
+        chrome.storage.local.set({ briefingData: request.briefingData }, function() {
+            chrome.tabs.create({ url: request.url }, function () {
+            })
+        })
     } else if (request.action === 'copyStaticText') {
         copy(request.text, request.action)
     }  else if (request.action === 'copyIndSyndNote') {
