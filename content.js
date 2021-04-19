@@ -1,3 +1,9 @@
+/*
+    ========================
+    |   Global variables   |
+    ========================
+*/
+
 const defaultCheckCaps = ['PM', 'MP', 'ABC', 'ACT', 'NSW', 'NT', 'VIC', 'QLD', 'WA', 'SA', 'ANZ', 'NAB', 'ANU', 'COVID-19', 'BHP', 'ALP', 'LNP', 'TAFE', 'US', 'CSIRO', 'UK', 'TPG', 'CEO',
     'COVID', 'COVID-19', 'PCYC', 'STEM', 'AGL', 'ANSTO', 'SBS', 'GST', 'AMP', 'SMS', 'ACIC', 'NDIS', 'RBA', 'NAPLAN', 'AFP', 'SES', 'UN', 'PNG', 'AFMA', 'ABF', 'ASIC', 'ASIO', 'CBD', 'CCTV', 'HSC', 'HECS']
 const defaultCheckProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morrison', 'Daniel', 'Andrews', 'Victoria', 'Queensland', 'Tasmania',
@@ -23,12 +29,11 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
 const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News', 'industry.gov.au', 'WEB MSN Australia', 'Commercial Real Estate', 'Premier of Tasmania', 'Media Releases']
 
-function getLastThreeDates() {
-    let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
-    let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
-    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
-    return [todaysDate, dayBefore, dayBeforeYesterday]
-}
+/*
+    ===============================
+    |   Chrome runtime listener   |
+    ===============================
+*/
 
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -48,6 +53,18 @@ chrome.runtime.onMessage.addListener(
         }
     }
 )
+
+/*
+    ===================================================================
+    |                     Mastermind functions                        |
+    |                                                                 |
+    |   These event listeners set up the other functions to run       |
+    |   either when the page loads or when the user left clicks       |
+    |                                                                 |
+    |   The entire plugin effectively runs from these two functions   |
+    |                                                                 |
+    ===================================================================
+*/
 
 window.onload = async function () {
     const browserURL = window.location.href.toString()
@@ -81,7 +98,7 @@ window.onload = async function () {
     console.log(currentPortal)
 
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
-        document.addEventListener('scroll', func)
+        document.addEventListener('scroll', improveMPCoveragePage)
         document.addEventListener('keydown', (e) => {
             const addButton = [...document.getElementsByClassName('btn btn-primary')].filter(btn => btn.innerText === 'Add' && btn.className === 'btn btn-primary' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
             const cancelButton = [...document.getElementsByClassName('btn btn-default')].filter(btn => btn.innerText === 'Cancel' && btn.className === 'btn btn-default' && btn?.parentElement.className === 'modal-footer ng-scope')[0]
@@ -149,11 +166,11 @@ document.addEventListener('mousedown', async function (e) {
         waitForMP('media-item-header', removeOutletContactLinks)
     } else if (e.target.nodeName === 'SPAN' && e.target.outerText === ' BACK' || e.target.nodeName === 'A' && e.target.outerText === ' Coverage' ||
         e.target.href === 'https://app.mediaportal.com/#/monitor/media-coverage' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/monitor/media-coverage')) {
-        document.addEventListener('scroll', func)
+        document.addEventListener('scroll', improveMPCoveragePage)
         document.title = 'Mediaportal Coverage'
         seenIDs = []
     } else if (e.target.href === 'https://app.mediaportal.com/#/report-builder/view' || (e.target.parentElement && e.target.parentElement.href === 'https://app.mediaportal.com/#/report-builder/view')) {
-        document.removeEventListener('scroll', func)
+        document.removeEventListener('scroll', improveMPCoveragePage)
         document.title = 'Report Builder'
         setTimeout(() => {
             if (document.getElementsByClassName('dropdown-display').length > 0 && document.getElementsByClassName('dropdown-display')[0].innerText === ' Excel') {
@@ -265,131 +282,13 @@ chrome.storage.local.get({ readmoreScroll: true }, function (data) {
     }
 })
 
-function waitForMP(classToCheck, fnc, maxRecursion = 15) {
-    if (maxRecursion < 1) return
-    if (document.getElementsByClassName(classToCheck).length === 0) {
-        setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
-        return
-    }
-    fnc()
-}
+/*
+    =======================================
+    |   Coverage productivity functions   |
+    =======================================
+*/
 
-function addHeadlineSortOptions() {
-    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
-    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Asc'))
-    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Desc'))
-}
-function createDivider() {
-    let newList = document.createElement('li')
-    newList.className = 'divider'
-    return newList
-}
-
-function createNewListItem(direction) {
-    let newListItem = document.createElement('li')
-    newListItem.className = 'ng-scope'
-    let newLink = document.createElement('a')
-    newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
-    newLink.innerText = `PLUGIN: Headline (${direction})`
-    newLink.addEventListener('click', () => sortItems(direction))
-
-    newListItem.appendChild(newLink)
-    return newListItem
-}
-function sortItems(direction) {
-    if (window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
-        let parent = document.getElementsByClassName('list-wrap ng-scope')[0]
-        let children = [...parent.children]
-        children.sort((a, b) => {
-            let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
-            if (/^'|^"/.test(aText)) aText = aText.slice(1)
-            let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
-            if (/^'|^"/.test(aText)) aText = aText.slice(2)
-            if (aText < bText) {
-                return direction === 'Asc' ? -1 : 1
-            }
-            if (aText > bText) {
-                return direction === 'Asc' ? 1 : -1
-            }
-            return 0
-        })
-        for (let j = 0; j < children.length; j++) {
-            parent.appendChild(children[j])
-        }
-    } else {
-        let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
-        for (let i = 0; i < groups.length; i++) {
-            let parent = groups[i].firstElementChild.firstElementChild
-            let children = [...parent.children]
-            children.sort((a, b) => {
-                let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
-                if (/^'|^"/.test(aText)) aText = aText.slice(1)
-                let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
-                if (/^'|^"/.test(aText)) aText = aText.slice(2)
-                if (aText < bText) {
-                    return direction === 'Asc' ? -1 : 1
-                }
-                if (aText > bText) {
-                    return direction === 'Asc' ? 1 : -1
-                }
-                return 0
-            })
-            for (let j = 0; j < children.length; j++) {
-                parent.appendChild(children[j])
-            }
-        }
-    }
-}
-
-function expandSearchResults() {
-    [...document.getElementsByClassName('btn-view-toggle')].filter(x => {
-        if (x.parentElement && x.parentElement.parentElement && x.parentElement.parentElement.parentElement &&
-            x.parentElement.parentElement.parentElement.parentElement &&
-            x.parentElement.parentElement.parentElement.parentElement.parentElement &&
-            /media-item-syndication/.test(x.parentElement.parentElement.parentElement.parentElement.parentElement.className)) {
-            return x.parentElement.parentElement.parentElement.parentElement.children[0] === x.parentElement.parentElement.parentElement &&
-                x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
-        }
-        return x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
-    }).forEach(x => x.click())
-}
-
-function createSearchButton() {
-    const div = document.createElement('div')
-    div.style.paddingTop = '10px'
-    const input = document.createElement('input')
-    input.className = 'checkbox-custom'
-    input.type = 'checkbox'
-    div.appendChild(input)
-    const label = document.createElement('label')
-    label.className = 'checkbox-custom-label'
-    label.innerText = 'Expand results'
-
-    label.addEventListener('mousedown', (e) => {
-        if (e.target.parentElement.firstElementChild.checked) {
-            e.target.parentElement.firstElementChild.checked = false
-            document.removeEventListener('scroll', expandSearchResults)
-        } else {
-            e.target.parentElement.firstElementChild.checked = true
-            document.addEventListener('scroll', expandSearchResults)
-        }
-    })
-    div.appendChild(label)
-    return div
-}
-
-function appendSearchButton() {
-    document.getElementsByClassName('control-area clearfix')[0].appendChild(createSearchButton())
-}
-
-const removeOutletContactLinks = () => {
-    if (coverageOptions.contactLinks) {
-        let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
-        links.map(link => link.href = '')
-    }
-}
-
-function func() {
+function improveMPCoveragePage() {
     removeOutletContactLinks()
     greyOutAutomatedBroadcast()
 }
@@ -475,33 +374,100 @@ function greyOutAutomatedBroadcast() {
     }
 }
 
-function updatePlatformButtonText(id, newText) {
-    if (!document.getElementById(id)) {
-        console.log(id, newText, document.getElementById(id))
-        return
+const removeOutletContactLinks = () => {
+    if (coverageOptions.contactLinks) {
+        let links = [...document.querySelectorAll('a')].filter(link => /app\.mediaportal\.com\/#\/connect\/media-contact/.test(link.href) || /app\.mediaportal\.com\/#connect\/media-outlet/.test(link.href))
+        links.map(link => link.href = '')
     }
-    const originalText = document.getElementById(id).innerText
-
-    document.getElementById(id).innerText = newText
-
-    setTimeout(() => document.getElementById(id).innerText = originalText, 2000)
 }
 
-function closeOpenedItems(skipMarkAsUnread) {
-    const briefingSections = [...document.querySelectorAll('mp-report-section')]
-        .filter(section => !section.firstElementChild.firstElementChild.className.includes('mat-expanded'))
+function sortItems(direction) {
+    if (window.location.href.toString().startsWith('https://app.mediaportal.com/#/monitor/search-coverage/')) {
+        let parent = document.getElementsByClassName('list-wrap ng-scope')[0]
+        let children = [...parent.children]
+        children.sort((a, b) => {
+            let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+            if (/^'|^"/.test(aText)) aText = aText.slice(1)
+            let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+            if (/^'|^"/.test(aText)) aText = aText.slice(2)
+            if (aText < bText) {
+                return direction === 'Asc' ? -1 : 1
+            }
+            if (aText > bText) {
+                return direction === 'Asc' ? 1 : -1
+            }
+            return 0
+        })
+        for (let j = 0; j < children.length; j++) {
+            parent.appendChild(children[j])
+        }
+    } else {
+        let groups = document.getElementsByClassName('folder-details-wrap ng-scope')
+        for (let i = 0; i < groups.length; i++) {
+            let parent = groups[i].firstElementChild.firstElementChild
+            let children = [...parent.children]
+            children.sort((a, b) => {
+                let aText = a.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+                if (/^'|^"/.test(aText)) aText = aText.slice(1)
+                let bText = b.firstElementChild.firstElementChild.children[1].innerText.toLowerCase()
+                if (/^'|^"/.test(aText)) aText = aText.slice(2)
+                if (aText < bText) {
+                    return direction === 'Asc' ? -1 : 1
+                }
+                if (aText > bText) {
+                    return direction === 'Asc' ? 1 : -1
+                }
+                return 0
+            })
+            for (let j = 0; j < children.length; j++) {
+                parent.appendChild(children[j])
+            }
+        }
+    }
+}
 
-    briefingSections.forEach(section => section.firstElementChild.firstElementChild.firstElementChild.click())
+function expandSearchResults() {
+    [...document.getElementsByClassName('btn-view-toggle')].filter(x => {
+        if (x.parentElement && x.parentElement.parentElement && x.parentElement.parentElement.parentElement &&
+            x.parentElement.parentElement.parentElement.parentElement &&
+            x.parentElement.parentElement.parentElement.parentElement.parentElement &&
+            /media-item-syndication/.test(x.parentElement.parentElement.parentElement.parentElement.parentElement.className)) {
+            return x.parentElement.parentElement.parentElement.parentElement.children[0] === x.parentElement.parentElement.parentElement &&
+                x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
+        }
+        return x.firstElementChild && x.firstElementChild.className === 'fa fa-chevron-down'
+    }).forEach(x => x.click())
+}
 
-    let openedItems = [...document.querySelectorAll('mp-mediaitem-card')]
-        .filter(item => item.firstElementChild.className.includes('mat-expanded'))
-    console.log(openedItems)
+function createSearchButton() {
+    const div = document.createElement('div')
+    div.style.paddingTop = '10px'
+    const input = document.createElement('input')
+    input.className = 'checkbox-custom'
+    input.type = 'checkbox'
+    div.appendChild(input)
+    const label = document.createElement('label')
+    label.className = 'checkbox-custom-label'
+    label.innerText = 'Expand results'
 
-    openedItems.forEach(item => {
-        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
-        if (!skipMarkAsUnread) item.parentElement.firstElementChild.children[1].click()
+    label.addEventListener('mousedown', (e) => {
+        if (e.target.parentElement.firstElementChild.checked) {
+            e.target.parentElement.firstElementChild.checked = false
+            document.removeEventListener('scroll', expandSearchResults)
+        } else {
+            e.target.parentElement.firstElementChild.checked = true
+            document.addEventListener('scroll', expandSearchResults)
+        }
     })
+    div.appendChild(label)
+    return div
 }
+
+/*
+    ===================================================
+    |   DB Platform Briefing productivity functions   |
+    ===================================================
+*/
 
 function getPossibleSyndications() {
     let headlineObj = {}
@@ -686,11 +652,6 @@ function highlightBylineErrors() {
 
 }
 
-function filterObj(obj) {
-    return Object.keys(obj)
-        .filter(key => obj[key].length > 1)
-        .reduce((res, key) => (res[key] = obj[key], res), {})
-}
 
 function fixPressSyndications() {
     try {
@@ -723,13 +684,6 @@ function fixPressSyndications() {
         updatePlatformButtonText('fixPressBtn', 'Error encountered running tool')
     }
 
-}
-
-function expandSectionHeadings() {
-    let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
-    sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
-
-    closeOpenedItems(true)
 }
 
 function expandSectionHeadingsBtn() {
@@ -766,6 +720,55 @@ function highlightBroadcastItems() {
     }
 
 }
+
+/*
+    ==============================================
+    |   DB Platform Briefing helper functions    |
+    ==============================================
+*/
+
+
+function expandSectionHeadings() {
+    let sectionHeadings = [...document.querySelectorAll('mat-expansion-panel')].filter(item => item.parentElement.nodeName === 'FORM' && item.className.search('mat-expanded') === -1)
+    sectionHeadings.forEach(item => item.firstElementChild.firstElementChild.firstElementChild.click())
+
+    closeOpenedItems(true)
+}
+
+function closeOpenedItems(skipMarkAsUnread) {
+    const briefingSections = [...document.querySelectorAll('mp-report-section')]
+        .filter(section => !section.firstElementChild.firstElementChild.className.includes('mat-expanded'))
+
+    briefingSections.forEach(section => section.firstElementChild.firstElementChild.firstElementChild.click())
+
+    let openedItems = [...document.querySelectorAll('mp-mediaitem-card')]
+        .filter(item => item.firstElementChild.className.includes('mat-expanded'))
+    console.log(openedItems)
+
+    openedItems.forEach(item => {
+        item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
+        if (!skipMarkAsUnread) item.parentElement.firstElementChild.children[1].click()
+    })
+}
+
+
+function updatePlatformButtonText(id, newText) {
+    if (!document.getElementById(id)) {
+        console.log(id, newText, document.getElementById(id))
+        return
+    }
+    const originalText = document.getElementById(id).innerText
+
+    document.getElementById(id).innerText = newText
+
+    setTimeout(() => document.getElementById(id).innerText = originalText, 2000)
+}
+
+/*
+    ==============================================
+    |   DB Platform Briefing specific features   |
+    ==============================================
+*/
 
 function getIndustrySyndNotesGrouped() {
     const selectedItems = document.getElementsByClassName('isSelected')
@@ -941,6 +944,12 @@ function appendHAOnlineItems() {
     }
 }
 
+/*
+    ====================================
+    |   DB Platform Preview checking   |
+    ====================================
+*/
+
 function cleanUpAuthorLines(byline, isIndustry) {
 
     if (isIndustry) {
@@ -1033,8 +1042,6 @@ function checkContentDates(date, outlet, mediatype) {
     }
     return date
 }
-
-
 
 function highlightHeadlines(headline, headlinesChecked) {
     // if (headlineStyle.includes('font-size: 16px')) return cleanUpAuthorLines(headline.split(', ')).join(', ')
@@ -1134,6 +1141,12 @@ async function checkingHighlights() {
     }
 }
 
+/*
+    ====================================
+    |   Plain Text Preview generator   |
+    ===================================
+*/
+
 function createPlainTextButton() {
     const button = document.createElement('button')
     button.innerText = 'Create Plain Text version'
@@ -1193,12 +1206,11 @@ function getPDFLinks() {
     return links
 }
 
-const toSentenceCase = (word) => word.split('').map((letter, index) => {
-    if (index === 0) return letter.toUpperCase()
-    else if ((word[0] === '"' || word[0] === '\'') && index === 1) return letter.toUpperCase()
-    else return letter.toLowerCase()
-}).join('')
-
+/*
+    =============================
+    |   Change Case functions   |
+    =============================
+*/
 
 function changeCase() {
     var textBox = document.activeElement
@@ -1329,6 +1341,13 @@ function getCapitalisation(text) {
     return 'lower case'
 }
 
+/*
+    ===============================================
+    |     Unadded content checking                |
+    ===============================================
+*/
+
+
 async function archiveSelectedContent() {
 
     let archivedContent = await getArchivedContent()
@@ -1442,59 +1461,11 @@ async function checkAddedContent() {
     }
 }
 
-function createRPButton() {
-    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
-    let button = document.createElement('BUTTON')
-    button.innerText = 'Check for missing content'
-    button.addEventListener('click', checkAddedContent)
-    button.style.marginLeft = '19px'
-    button.style.color = 'black'
-    button.style.borderColor = 'black'
-    button.className += 'AVeryLongClassNameNoOneWillEverUse'
-    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
-    let para = document.createElement('P')
-    para.innerText = 'Instructions:\n1: Do selections normally.\n2: Add all selections to RP when done, switch to Excel template\n3: If RP is grouped by anything, make sure each grouping\
-     is open. Scroll to the bottom to ensure all the content loads also.\n4: Click the above button, a new window will open if missing items are detected.\n\n NB: Some syndications may incorrectly appear\
-      as missing, this is a known bug'
-    para.style.marginLeft = '19px'
-    para.style.marginTop = '10px'
-    para.style.marginRight = '10px'
-    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
-}
-
-function createRPCopyButtons(buttonDiv) {
-    try {
-        if (buttonDiv.children[buttonDiv.children.length - 1].innerText === 'Copy without subheadings') return
-        const linebreakButton = buttonDiv.children[1].cloneNode(true)
-        linebreakButton.innerText = 'Copy without linebreaks'
-        linebreakButton.addEventListener('click', copyWithoutLineBreaks)
-        buttonDiv.appendChild(linebreakButton)
-        const subheadingButton = buttonDiv.children[1].cloneNode(true)
-        subheadingButton.innerText = 'Copy without subheadings'
-        subheadingButton.addEventListener('click', copywithoutSubheadings)
-        buttonDiv.appendChild(subheadingButton)
-    } catch (error) {
-        console.error(error)
-    }
-
-}
-
-function improveAccessibiltyOptions() {
-    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
-    let parentEle = document.getElementsByClassName('flex flex1 flex-direction-row align-items-center justify-content-space-between heading')[0].firstElementChild
-    let button = document.createElement('BUTTON')
-    button.innerText = 'MERGE ITEMS'
-    button.style.marginLeft = '15px'
-    button.className = 'mat-stroked-button mat-primary _mat-animation-noopable AVeryLongClassNameNoOneWillEverUse'
-    button.addEventListener('mousedown', clickMerge)
-    let secondButton = document.createElement('BUTTON')
-    secondButton.innerText = 'DELETE ITEMS'
-    secondButton.style.marginLeft = '15px'
-    secondButton.className = 'mat-stroked-button mat-primary _mat-animation-noopable'
-    secondButton.addEventListener('mousedown', clickDelete)
-    parentEle.appendChild(button)
-    parentEle.appendChild(secondButton)
-}
+/*
+    ===============================================
+    |     DB Platform productivity functions       |
+    ===============================================
+*/
 
 function clickMerge() {
     if (document.getElementsByClassName('mergeButton mat-button mat-primary _mat-animation-noopable ng-star-inserted').length > 0) {
@@ -1507,6 +1478,206 @@ function clickDelete() {
         document.getElementsByClassName('deleteButton mat-button mat-primary _mat-animation-noopable')[0].firstElementChild.click()
     }
 }
+
+function copyStaticText(event) {
+    let value = event.target.parentElement.firstElementChild.value
+    if (event.button !== 0 || value === '') return
+
+    chrome.runtime.sendMessage({
+        action: 'copyStaticText',
+        text: value
+    })
+    let text = value
+    event.target.parentElement.firstElementChild.value = 'Copied!'
+    setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
+}
+
+function copyWithoutLineBreaks() {
+    chrome.runtime.sendMessage({
+        action: '1_paste',
+        copy: window.getSelection().toString()
+    })
+    lastHighlightedElement = document.getSelection().baseNode
+}
+
+function copywithoutSubheadings() {
+    chrome.runtime.sendMessage({
+        action: '2_abc',
+        copy: window.getSelection().toString()
+    })
+    lastHighlightedElement = document.getSelection().baseNode
+}
+
+/*
+    ================================
+    |     DB Platform checks       |
+    ================================
+*/
+
+async function checkBriefing() {
+    const checkData = await getBriefingCheck(currentPortal)
+
+    let errors = []
+
+    if (!checkData) checkForErrors(null)
+    else {
+        if (checkData.subjectLineCantInclude) {
+            if (document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.subjectLineCantInclude)) {
+                errors.push('Subject line needs updating')
+            }
+        }
+        if (checkData.briefingNameCantInclude) {
+            if (document.getElementsByClassName('titleFormField')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.briefingNameCantInclude)) {
+                errors.push('Report title needs updating')
+            }
+        }
+        if (checkData.multipleBriefings) {
+            const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+            if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
+            else (checkForErrors(null))
+        } else checkForErrors(checkData)
+    }
+
+    if (errors.length === 0) return
+    setTimeout(() => showErrors(errors), 250)
+
+    function checkForErrors(checkData) {
+
+        const links = [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].children]
+            .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].childElementCount - 1)
+            .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.checked)
+            .map(link => link.firstElementChild.children[1].firstElementChild.value)
+
+        if (document.getElementsByClassName('mp-form-fieldset ng-star-inserted')[0]?.firstElementChild?.innerText === 'SEND TIME' &&
+            !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
+            errors.push('Send time not checked')
+        }
+        const filteredLinks = links.filter(link => link.startsWith('MonitorReport-'))
+        if (filteredLinks.length > 0) {
+            errors.push('One or more PDF Links need renaming')
+        }
+
+        if (!checkData) return
+        const items = getItems()
+        const attachments = getAttachments()
+
+        if (checkData.headlineAppend) {
+            if (checkData.headlineAppend.outlets) {
+                const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
+                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
+                    errors.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
+                }
+            } else if (checkData.headlineAppend.mediaTypes) {
+                const relevantOutlets = items.filter(item => checkData.headlineAppend.mediaTypes.includes(item.mediaType))
+                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
+                    errors.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
+                }
+            }
+        }
+
+        if (checkData.excludeOutlets && items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet)).length > 0) {
+            const badOutlets = new Set()
+            const badItems = items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet))
+            badItems.forEach(item => badOutlets.add(item.mediaOutlet))
+            errors.push(`${[...badOutlets].join(', ')} cannot be included in this briefing, but have been`)
+        }
+
+        if (checkData.pdfs) {
+            const missingPDFs = checkData.pdfs.filter(pdf => !links.includes(pdf))
+            if (missingPDFs.length > 0) {
+                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+            }
+        }
+
+        if (checkData.excludePDFs) {
+            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf))
+            if (missingPDFs.length > 0) {
+                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+            }
+        }
+
+        if (checkData.attachments) {
+            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => {
+                console.log(briefingAttachment.startsWith(attachment), attachment)
+                return briefingAttachment.startsWith(attachment)
+            }))
+            if (missingAttachments.length > 0) {
+                errors.push(`Missing the following attachments:\n        \u2022          ${missingAttachments.join('\n\u2022          ')}`)
+            }
+        }
+    }
+}
+
+
+const getAttachments = () => {
+    return [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
+        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)
+        .filter(attachment => attachment.innerText !== '' && attachment.innerText !== 'Briefing PDF')
+        .map(attachment => attachment.innerText)
+}
+
+const getItems = () => {
+    const rawItems = [...document.getElementsByClassName('mat-content')].filter(item => item.firstElementChild.className === 'flex flex-1 flex-direction-column')
+
+    return rawItems.map(item => {
+        return {
+            headline: item.firstElementChild.firstElementChild.innerText,
+            mediaType: getMediaType(item?.firstElementChild?.children[1]?.children[1]?.children[2]?.firstElementChild?.className),
+            mediaOutlet: item?.firstElementChild?.children[1]?.firstElementChild?.innerText && item?.firstElementChild?.children[1]?.firstElementChild?.innerText.length > 0 ? item?.firstElementChild?.children[1]?.firstElementChild?.innerText.split(' ,')[0] : null
+        }
+    })
+}
+
+const getMediaType = (className) => {
+    if (!className) return null
+
+    if (className.includes('fa-file-alt')) return 'print'
+    else if (className.includes('fa-cloud')) return 'online'
+    else if (className.includes('fa-volume-up')) return 'radio'
+    else if (className.includes('fa-video')) return 'television'
+    else return 'other'
+}
+
+
+function showErrors(errors) {
+    const parentDiv = document.createElement('div')
+    const headerDiv = document.createElement('div')
+    const title = document.createElement('b')
+    title.innerText = 'Several possible errors detected'
+    title.style.color = 'red'
+    const button = document.createElement('button')
+    button.innerText = 'more'
+    button.addEventListener('click',((e) => {
+        e.target.parentElement.parentElement.children[1].style.display = e.target.parentElement.parentElement.children[1].style.display === 'block' ? 'none' : 'block'
+        e.target.innerText = e.target.innerText === 'more' ? 'less' : 'more'
+    }))
+    button.style.marginLeft = '10px'
+    headerDiv.style.display = 'flex'
+    headerDiv.appendChild(title)
+    headerDiv.appendChild(button)
+    parentDiv.appendChild(headerDiv)
+    parentDiv.style.marginTop = '20px'
+
+    const errorContainer = document.createElement('ul')
+    errorContainer.style.display = 'none'
+    errors.forEach(error => {
+        const errorMessage = document.createElement('li')
+        errorMessage.innerText = error
+        errorContainer.appendChild(errorMessage)
+    })
+    parentDiv.appendChild(errorContainer)
+    if (!document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0]) {
+        setTimeout(() => document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv), 250)
+    } else {
+        document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv)
+    }
+}
+
+/*
+    ================================
+    |  DB Platform UI functions    |
+    ================================
+*/
 
 async function createDBPlatformButtons() {
 
@@ -1681,193 +1852,144 @@ function saveStaticText() {
     setTimeout(() => document.getElementById('saveStaticTextBtn').innerText = 'Save', 1000)
 }
 
-function copyStaticText(event) {
-    let value = event.target.parentElement.firstElementChild.value
-    if (event.button !== 0 || value === '') return
-
-    chrome.runtime.sendMessage({
-        action: 'copyStaticText',
-        text: value
-    })
-    let text = value
-    event.target.parentElement.firstElementChild.value = 'Copied!'
-    setTimeout(() => event.target.parentElement.firstElementChild.value = text, 1000)
+function improveAccessibiltyOptions() {
+    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
+    let parentEle = document.getElementsByClassName('flex flex1 flex-direction-row align-items-center justify-content-space-between heading')[0].firstElementChild
+    let button = document.createElement('BUTTON')
+    button.innerText = 'MERGE ITEMS'
+    button.style.marginLeft = '15px'
+    button.className = 'mat-stroked-button mat-primary _mat-animation-noopable AVeryLongClassNameNoOneWillEverUse'
+    button.addEventListener('mousedown', clickMerge)
+    let secondButton = document.createElement('BUTTON')
+    secondButton.innerText = 'DELETE ITEMS'
+    secondButton.style.marginLeft = '15px'
+    secondButton.className = 'mat-stroked-button mat-primary _mat-animation-noopable'
+    secondButton.addEventListener('mousedown', clickDelete)
+    parentEle.appendChild(button)
+    parentEle.appendChild(secondButton)
 }
 
-function copyWithoutLineBreaks() {
-    chrome.runtime.sendMessage({
-        action: '1_paste',
-        copy: window.getSelection().toString()
-    })
-    lastHighlightedElement = document.getSelection().baseNode
-}
-
-function copywithoutSubheadings() {
-    chrome.runtime.sendMessage({
-        action: '2_abc',
-        copy: window.getSelection().toString()
-    })
-    lastHighlightedElement = document.getSelection().baseNode
-}
-
-async function checkBriefing() {
-    const checkData = await getBriefingCheck(currentPortal)
-
-    let errors = []
-
-    if (!checkData) checkForErrors(null)
-    else {
-        if (checkData.subjectLineCantInclude) {
-            if (document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.subjectLineCantInclude)) {
-                errors.push('Subject line needs updating')
-            }
-        }
-        if (checkData.briefingNameCantInclude) {
-            if (document.getElementsByClassName('titleFormField')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.briefingNameCantInclude)) {
-                errors.push('Report title needs updating')
-            }
-        }
-        if (checkData.multipleBriefings) {
-            const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
-            if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
-            else (checkForErrors(null))
-        } else checkForErrors(checkData)
+function createRPCopyButtons(buttonDiv) {
+    try {
+        if (buttonDiv.children[buttonDiv.children.length - 1].innerText === 'Copy without subheadings') return
+        const linebreakButton = buttonDiv.children[1].cloneNode(true)
+        linebreakButton.innerText = 'Copy without linebreaks'
+        linebreakButton.addEventListener('click', copyWithoutLineBreaks)
+        buttonDiv.appendChild(linebreakButton)
+        const subheadingButton = buttonDiv.children[1].cloneNode(true)
+        subheadingButton.innerText = 'Copy without subheadings'
+        subheadingButton.addEventListener('click', copywithoutSubheadings)
+        buttonDiv.appendChild(subheadingButton)
+    } catch (error) {
+        console.error(error)
     }
 
-    if (errors.length === 0) return
-    setTimeout(() => showErrors(errors), 250)
+}
 
-    function checkForErrors(checkData) {
+/*
+    =================================
+    |  Report Builder UI functions  |
+    =================================
+*/
 
-        const links = [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].children]
-            .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].childElementCount - 1)
-            .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.checked)
-            .map(link => link.firstElementChild.children[1].firstElementChild.value)
+function createRPButton() {
+    if (document.getElementsByClassName('AVeryLongClassNameNoOneWillEverUse').length > 0) return
+    let button = document.createElement('BUTTON')
+    button.innerText = 'Check for missing content'
+    button.addEventListener('click', checkAddedContent)
+    button.style.marginLeft = '19px'
+    button.style.color = 'black'
+    button.style.borderColor = 'black'
+    button.className += 'AVeryLongClassNameNoOneWillEverUse'
+    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(button)
+    let para = document.createElement('P')
+    para.innerText = 'Instructions:\n1: Do selections normally.\n2: Add all selections to RP when done, switch to Excel template\n3: If RP is grouped by anything, make sure each grouping\
+     is open. Scroll to the bottom to ensure all the content loads also.\n4: Click the above button, a new window will open if missing items are detected.\n\n NB: Some syndications may incorrectly appear\
+      as missing, this is a known bug'
+    para.style.marginLeft = '19px'
+    para.style.marginTop = '10px'
+    para.style.marginRight = '10px'
+    document.getElementsByClassName('dropdown-menu scroll-menu')[0].children[1].appendChild(para)
+}
 
-        if (document.getElementsByClassName('mp-form-fieldset ng-star-inserted')[0]?.firstElementChild?.innerText === 'SEND TIME' &&
-            !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
-            errors.push('Send time not checked')
-        }
-        const filteredLinks = links.filter(link => link.startsWith('MonitorReport-'))
-        if (filteredLinks.length > 0) {
-            errors.push('One or more PDF Links need renaming')
-        }
+/*
+    =================================
+    |  Coverage UI functions  |
+    =================================
+*/
 
-        if (!checkData) return
-        const items = getItems()
-        const attachments = getAttachments()
 
-        if (checkData.headlineAppend) {
-            if (checkData.headlineAppend.outlets) {
-                const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
-                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errors.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
-                }
-            } else if (checkData.headlineAppend.mediaTypes) {
-                const relevantOutlets = items.filter(item => checkData.headlineAppend.mediaTypes.includes(item.mediaType))
-                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errors.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
-                }
-            }
-        }
+function appendSearchButton() {
+    document.getElementsByClassName('control-area clearfix')[0].appendChild(createSearchButton())
+}
 
-        if (checkData.excludeOutlets && items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet)).length > 0) {
-            const badOutlets = new Set()
-            const badItems = items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet))
-            badItems.forEach(item => badOutlets.add(item.mediaOutlet))
-            errors.push(`${[...badOutlets].join(', ')} cannot be included in this briefing, but have been`)
-        }
 
-        if (checkData.pdfs) {
-            const missingPDFs = checkData.pdfs.filter(pdf => !links.includes(pdf))
-            if (missingPDFs.length > 0) {
-                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
-            }
-        }
+function addHeadlineSortOptions() {
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createDivider())
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Asc'))
+    document.getElementsByClassName('sorting dropdown')[0].children[1].appendChild(createNewListItem('Desc'))
+}
+function createDivider() {
+    let newList = document.createElement('li')
+    newList.className = 'divider'
+    return newList
+}
 
-        if (checkData.excludePDFs) {
-            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf))
-            if (missingPDFs.length > 0) {
-                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
-            }
-        }
+function createNewListItem(direction) {
+    let newListItem = document.createElement('li')
+    newListItem.className = 'ng-scope'
+    let newLink = document.createElement('a')
+    newLink.className = 'ng-pristine ng-untouched ng-valid ng-binding ng-not-empty'
+    newLink.innerText = `PLUGIN: Headline (${direction})`
+    newLink.addEventListener('click', () => sortItems(direction))
 
-        if (checkData.attachments) {
-            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => {
-                console.log(briefingAttachment.startsWith(attachment), attachment)
-                return briefingAttachment.startsWith(attachment)
-            }))
-            if (missingAttachments.length > 0) {
-                errors.push(`Missing the following attachments:\n        \u2022          ${missingAttachments.join('\n\u2022          ')}`)
-            }
-        }
+    newListItem.appendChild(newLink)
+    return newListItem
+}
+
+
+/*
+    ==============================
+    |  Global helper functions   |
+    ==============================
+*/
+
+const toSentenceCase = (word) => word.split('').map((letter, index) => {
+    if (index === 0) return letter.toUpperCase()
+    else if ((word[0] === '"' || word[0] === '\'') && index === 1) return letter.toUpperCase()
+    else return letter.toLowerCase()
+}).join('')
+
+
+function filterObj(obj) {
+    return Object.keys(obj)
+        .filter(key => obj[key].length > 1)
+        .reduce((res, key) => (res[key] = obj[key], res), {})
+}
+
+
+function waitForMP(classToCheck, fnc, maxRecursion = 15) {
+    if (maxRecursion < 1) return
+    if (document.getElementsByClassName(classToCheck).length === 0) {
+        setTimeout(() => waitForMP(classToCheck, fnc, maxRecursion - 1), 1000)
+        return
     }
+    fnc()
 }
 
 
-const getAttachments = () => {
-    return [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
-        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)
-        .filter(attachment => attachment.innerText !== '' && attachment.innerText !== 'Briefing PDF')
-        .map(attachment => attachment.innerText)
+function getLastThreeDates() {
+    let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
+    let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
+    let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
+    return [todaysDate, dayBefore, dayBeforeYesterday]
 }
 
-const getItems = () => {
-    const rawItems = [...document.getElementsByClassName('mat-content')].filter(item => item.firstElementChild.className === 'flex flex-1 flex-direction-column')
-
-    return rawItems.map(item => {
-        return {
-            headline: item.firstElementChild.firstElementChild.innerText,
-            mediaType: getMediaType(item?.firstElementChild?.children[1]?.children[1]?.children[2]?.firstElementChild?.className),
-            mediaOutlet: item?.firstElementChild?.children[1]?.firstElementChild?.innerText && item?.firstElementChild?.children[1]?.firstElementChild?.innerText.length > 0 ? item?.firstElementChild?.children[1]?.firstElementChild?.innerText.split(' ,')[0] : null
-        }
-    })
-}
-
-const getMediaType = (className) => {
-    if (!className) return null
-
-    if (className.includes('fa-file-alt')) return 'print'
-    else if (className.includes('fa-cloud')) return 'online'
-    else if (className.includes('fa-volume-up')) return 'radio'
-    else if (className.includes('fa-video')) return 'television'
-    else return 'other'
-}
-
-
-function showErrors(errors) {
-    const parentDiv = document.createElement('div')
-    const headerDiv = document.createElement('div')
-    const title = document.createElement('b')
-    title.innerText = 'Several possible errors detected'
-    title.style.color = 'red'
-    const button = document.createElement('button')
-    button.innerText = 'more'
-    button.addEventListener('click',((e) => {
-        e.target.parentElement.parentElement.children[1].style.display = e.target.parentElement.parentElement.children[1].style.display === 'block' ? 'none' : 'block'
-        e.target.innerText = e.target.innerText === 'more' ? 'less' : 'more'
-    }))
-    button.style.marginLeft = '10px'
-    headerDiv.style.display = 'flex'
-    headerDiv.appendChild(title)
-    headerDiv.appendChild(button)
-    parentDiv.appendChild(headerDiv)
-    parentDiv.style.marginTop = '20px'
-
-    const errorContainer = document.createElement('ul')
-    errorContainer.style.display = 'none'
-    errors.forEach(error => {
-        const errorMessage = document.createElement('li')
-        errorMessage.innerText = error
-        errorContainer.appendChild(errorMessage)
-    })
-    parentDiv.appendChild(errorContainer)
-    if (!document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0]) {
-        setTimeout(() => document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv), 250)
-    } else {
-        document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv)
-    }
-}
+/*
+    ====================================
+    |  Chrome storage helper functions  |
+    ====================================
+*/
 
 chrome.storage.local.get({ coverageOptions: coverageOptions }, function (data) {
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
