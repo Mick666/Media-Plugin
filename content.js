@@ -214,7 +214,8 @@ document.addEventListener('mousedown', async function (e) {
     } else if (e.target?.className === 'mp-icon fas fa-eye' && e.target?.parentElement?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
         createRPCopyButtons(e.target.parentElement.parentElement.parentElement)
     } else if (e.target.innerText === 'Email' || e.target.className === 'mp-icon fas fa-envelope') {
-        closeOpenedItems(true)
+        try { closeOpenedItems(true) }
+        catch (error) { console.error(error) }
         checkBriefing()
     }
 
@@ -1174,7 +1175,7 @@ function createPlainTextPreview() {
 }
 
 function getSectionItems(sectionNames) {
-    const sections = sectionNames.reduce((acc,curr) => (acc[curr.toUpperCase()] = [], acc), {})
+    const sections = sectionNames.reduce((acc, curr) => (acc[curr.toUpperCase()] = [], acc), {})
     const items = [...document.getElementsByClassName('item-headline-hook')]
 
     items.forEach(item => {
@@ -1518,9 +1519,26 @@ async function checkBriefing() {
     const checkData = await getBriefingCheck(currentPortal)
 
     let errors = []
+    const items = getItems()
+    const attachments = getAttachments()
+    const unlinkedText = [...document.querySelectorAll('strong')].filter(text => text.parentElement.nodeName !== 'A').map(text => text.innerText)
+    const hasSummary = [...document.getElementsByClassName('ql-blank')].filter(editor => editor.parentElement.parentElement.parentElement.parentElement.className.includes('executiveSummaryRichText')).length === 0
+    const links = [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].children]
+        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].childElementCount - 1)
+        .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.checked)
+        .map(link => link.firstElementChild.children[1].firstElementChild.value.replace('’', '\'').trimStart().trimEnd())
+    const filteredLinks = links.filter(link => link.startsWith('MonitorReport-'))
+    const headerLinks = [...document.getElementsByClassName('ql-editor')[0].children].filter(para => !para.firstElementChild || para.firstElementChild.nodeName === 'SPAN').map(p => p.innerText.trimEnd().trimStart())
 
-    if (!checkData) checkForErrors(null)
-    else {
+    if (document.getElementsByClassName('mp-form-fieldset ng-star-inserted')[0]?.firstElementChild?.innerText === 'SEND TIME' &&
+        !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
+        errors.push('Send time not checked')
+    }
+    if (filteredLinks.length > 0) {
+        errors.push('One or more PDF Links need renaming')
+    }
+
+    if (checkData) {
         if (checkData.subjectLineCantInclude) {
             if (document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.subjectLineCantInclude)) {
                 errors.push('Subject line needs updating')
@@ -1534,43 +1552,31 @@ async function checkBriefing() {
         if (checkData.multipleBriefings) {
             const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
             if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
-            else (checkForErrors(null))
+        } else if (checkData.multipleSends) {
+            const possibleErrors = checkData.multipleSends.map(send => { return { name: send.name, errors: [], checks: send } })
+            possibleErrors.forEach(send => checkForErrors(send.checks, send.errors))
+            console.log(possibleErrors)
+            if (possibleErrors.every(send => send.errors.length > 0)) {
+                possibleErrors.forEach(send => errors.push([`If this is the ${send.name} send:`, ...send.errors]))
+            }
         } else checkForErrors(checkData)
     }
 
     if (errors.length === 0) return
     setTimeout(() => showErrors(errors), 250)
 
-    function checkForErrors(checkData) {
-
-        const links = [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].children]
-            .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].childElementCount - 1)
-            .filter(link => link?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.checked)
-            .map(link => link.firstElementChild.children[1].firstElementChild.value)
-
-        if (document.getElementsByClassName('mp-form-fieldset ng-star-inserted')[0]?.firstElementChild?.innerText === 'SEND TIME' &&
-            !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
-            errors.push('Send time not checked')
-        }
-        const filteredLinks = links.filter(link => link.startsWith('MonitorReport-'))
-        if (filteredLinks.length > 0) {
-            errors.push('One or more PDF Links need renaming')
-        }
-
-        if (!checkData) return
-        const items = getItems()
-        const attachments = getAttachments()
-
+    function checkForErrors(checkData, errorsArray = errors) {
+        console.log(checkData)
         if (checkData.headlineAppend) {
             if (checkData.headlineAppend.outlets) {
                 const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
                 if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errors.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
+                    errorsArray.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
                 }
             } else if (checkData.headlineAppend.mediaTypes) {
                 const relevantOutlets = items.filter(item => checkData.headlineAppend.mediaTypes.includes(item.mediaType))
                 if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errors.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
+                    errorsArray.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
                 }
             }
         }
@@ -1579,65 +1585,49 @@ async function checkBriefing() {
             const badOutlets = new Set()
             const badItems = items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet))
             badItems.forEach(item => badOutlets.add(item.mediaOutlet))
-            errors.push(`${[...badOutlets].join(', ')} cannot be included in this briefing, but have been`)
+            errorsArray.push(`${[...badOutlets].join(', ')} cannot be included in this briefing, but have been`)
         }
 
-        if (checkData.pdfs) {
-            const missingPDFs = checkData.pdfs.filter(pdf => !links.includes(pdf))
-            if (missingPDFs.length > 0) {
-                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+        if (checkData.pdfs || checkData.links) {
+            const missingPDFs = checkData.pdfs ? checkData.pdfs.filter(pdf => !links.includes(pdf[0])) : null
+            const missingLinks = checkData.links ? checkData.links.filter(link => unlinkedText.includes(link[0])) : null
+            if (missingPDFs && missingPDFs.length > 0 && missingLinks && missingLinks.length > 0) {
+                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`), ...missingLinks.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+            } else if (missingPDFs && missingPDFs.length > 0) {
+                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+            } else if (missingLinks && missingLinks.length > 0) {
+                errorsArray.push(['Missing the following links:', ...missingLinks.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+            }
+        } else if (links.length > 0 && !checkData.pdfs) {
+            errorsArray.push('This briefing does not normally take linked attachments')
+        }
+
+        if (checkData.headerLinks) {
+            const missingHeaderLinks = checkData.headerLinks.filter(link => headerLinks.includes(link[0]))
+            if (missingHeaderLinks.length > 0) {
+                errorsArray.push(['Missing the following links in the header:', ...missingHeaderLinks.map(link => `${link[0]} (${link[1]})`)])
             }
         }
 
         if (checkData.excludePDFs) {
-            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf))
+            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf[0]))
             if (missingPDFs.length > 0) {
-                errors.push(`Missing the following PDFs:\n        \u2022          ${missingPDFs.join('\n\u2022          ')}`)
+                errorsArray.push(['The following links shouldn\'t be included:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`)])
             }
         }
 
         if (checkData.attachments) {
-            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => {
-                console.log(briefingAttachment.startsWith(attachment), attachment)
-                return briefingAttachment.startsWith(attachment)
-            }))
+            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => briefingAttachment.startsWith(attachment[0])))
             if (missingAttachments.length > 0) {
-                errors.push(`Missing the following attachments:\n        \u2022          ${missingAttachments.join('\n\u2022          ')}`)
+                errorsArray.push(['Missing the following attachments:', ...missingAttachments.map(attachment => `${attachment[0]} (${attachment[1]})`)])
             }
+        } else if (attachments.length > 0) errorsArray.push('This briefing does not normally take attachments')
+
+        if (checkData.summary && !hasSummary) {
+            errorsArray.push('No executive summary detected')
         }
     }
 }
-
-
-const getAttachments = () => {
-    return [...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
-        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)
-        .filter(attachment => attachment.innerText !== '' && attachment.innerText !== 'Briefing PDF')
-        .map(attachment => attachment.innerText)
-}
-
-const getItems = () => {
-    const rawItems = [...document.getElementsByClassName('mat-content')].filter(item => item.firstElementChild.className === 'flex flex-1 flex-direction-column')
-
-    return rawItems.map(item => {
-        return {
-            headline: item.firstElementChild.firstElementChild.innerText,
-            mediaType: getMediaType(item?.firstElementChild?.children[1]?.children[1]?.children[2]?.firstElementChild?.className),
-            mediaOutlet: item?.firstElementChild?.children[1]?.firstElementChild?.innerText && item?.firstElementChild?.children[1]?.firstElementChild?.innerText.length > 0 ? item?.firstElementChild?.children[1]?.firstElementChild?.innerText.split(' ,')[0] : null
-        }
-    })
-}
-
-const getMediaType = (className) => {
-    if (!className) return null
-
-    if (className.includes('fa-file-alt')) return 'print'
-    else if (className.includes('fa-cloud')) return 'online'
-    else if (className.includes('fa-volume-up')) return 'radio'
-    else if (className.includes('fa-video')) return 'television'
-    else return 'other'
-}
-
 
 function showErrors(errors) {
     const parentDiv = document.createElement('div')
@@ -1647,7 +1637,7 @@ function showErrors(errors) {
     title.style.color = 'red'
     const button = document.createElement('button')
     button.innerText = 'more'
-    button.addEventListener('click',((e) => {
+    button.addEventListener('click', ((e) => {
         e.target.parentElement.parentElement.children[1].style.display = e.target.parentElement.parentElement.children[1].style.display === 'block' ? 'none' : 'block'
         e.target.innerText = e.target.innerText === 'more' ? 'less' : 'more'
     }))
@@ -1661,9 +1651,26 @@ function showErrors(errors) {
     const errorContainer = document.createElement('ul')
     errorContainer.style.display = 'none'
     errors.forEach(error => {
-        const errorMessage = document.createElement('li')
-        errorMessage.innerText = error
-        errorContainer.appendChild(errorMessage)
+        if (typeof error === 'string') appendError(error, errorContainer)
+        else {
+            appendError(error[0], errorContainer)
+            const errorParent = document.createElement('ul')
+            error.forEach((subError, ind) => {
+                if (typeof subError === 'string') {
+                    if (ind === 0) return
+                    appendError(subError, errorParent)
+                } else {
+                    appendError(subError[0], errorParent)
+                    const subErrorParent = document.createElement('ul')
+                    subError.forEach((subSubError, i) => {
+                        if (i === 0) return
+                        appendError(subSubError, subErrorParent)
+                    })
+                    errorParent.appendChild(subErrorParent)
+                }
+            })
+            errorContainer.appendChild(errorParent)
+        }
     })
     parentDiv.appendChild(errorContainer)
     if (!document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0]) {
@@ -1671,6 +1678,12 @@ function showErrors(errors) {
     } else {
         document.getElementsByClassName('mat-dialog-content ng-star-inserted')[0].firstElementChild.appendChild(parentDiv)
     }
+}
+
+function appendError(errorMessage, errorParent) {
+    const error = document.createElement('li')
+    error.innerText = errorMessage
+    errorParent.appendChild(error)
 }
 
 /*
@@ -1983,6 +1996,41 @@ function getLastThreeDates() {
     let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
     let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
     return [todaysDate, dayBefore, dayBeforeYesterday]
+}
+
+/*
+    ====================================
+    |  DB Platform helper functions  |
+    ====================================
+*/
+
+const getAttachments = () => {
+    return [...[...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
+        .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)[0].children]
+        .filter(attachment => attachment.innerText !== '' && !/Briefing PDF\n2MB/.test(attachment.innerText))
+        .map(attachment => attachment.innerText)
+}
+
+const getItems = () => {
+    const rawItems = [...document.getElementsByClassName('mat-content')].filter(item => item.firstElementChild.className === 'flex flex-1 flex-direction-column')
+
+    return rawItems.map(item => {
+        return {
+            headline: item.firstElementChild.firstElementChild.innerText,
+            mediaType: getMediaType(item?.firstElementChild?.children[1]?.children[1]?.children[2]?.firstElementChild?.className),
+            mediaOutlet: item?.firstElementChild?.children[1]?.firstElementChild?.innerText && item?.firstElementChild?.children[1]?.firstElementChild?.innerText.length > 0 ? item?.firstElementChild?.children[1]?.firstElementChild?.innerText.split(' ,')[0] : null
+        }
+    })
+}
+
+const getMediaType = (className) => {
+    if (!className) return null
+
+    if (className.includes('fa-file-alt')) return 'print'
+    else if (className.includes('fa-cloud')) return 'online'
+    else if (className.includes('fa-volume-up')) return 'radio'
+    else if (className.includes('fa-video')) return 'television'
+    else return 'other'
 }
 
 /*
