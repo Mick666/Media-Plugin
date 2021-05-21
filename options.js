@@ -73,6 +73,10 @@ window.addEventListener('load', async () => {
         document.getElementById('autoHighlight').children[0].checked = data.autoHighlight
     })
 
+    chrome.storage.local.get({ readMoreCopy: true }, function(data){
+        document.getElementById('readMoreCopy').children[0].checked = data.readMoreCopy
+    })
+
     loadTextFieldData()
 })
 
@@ -158,6 +162,16 @@ document.getElementById('autoHighlight').addEventListener('change', function(e) 
         })
     } else {
         chrome.storage.local.set({ autoHighlight: false }, function() {
+        })
+    }
+})
+
+document.getElementById('readMoreCopy').addEventListener('change', function(e) {
+    if (e.target.checked) {
+        chrome.storage.local.set({ readMoreCopy: true }, function() {
+        })
+    } else {
+        chrome.storage.local.set({ readMoreCopy: false }, function() {
         })
     }
 })

@@ -114,7 +114,7 @@ window.onload = async function () {
     if (document.getElementsByClassName('coverage-jump-trigger ng-binding').length > 0) {
         document.title = document.getElementsByClassName('coverage-jump-trigger ng-binding')[0].innerText.trimEnd()
         waitForMP('sorting dropdown', addHeadlineSortOptions)
-        waitForMP('media-item-header', removeOutletContactLinks)
+        waitForMP('media-item-header', improveMPCoveragePage)
     } else if (browserURL === 'https://app.mediaportal.com/dailybriefings/#/briefings') {
         document.title = 'DB Platform'
     } else if (browserURL === 'https://app.mediaportal.com/#/monitor/media-coverage') {
@@ -208,15 +208,20 @@ document.addEventListener('mousedown', async function (e) {
         waitForMP('sorting dropdown', addHeadlineSortOptions)
     }
     if (e.target?.className === 'mp-page-thin-button mat-stroked-button mat-primary _mat-animation-noopable ng-star-inserted' && e.target?.parentElement?.className === 'flex flex-direction-row links') {
-        createRPCopyButtons(e.target.parentElement)
+        const readMoreOption = await getReadMoreCopyOption()
+        if (readMoreOption) createRPCopyButtons(e.target.parentElement)
     } else if (e.target?.className === 'mat-button-wrapper' && e.target?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
-        createRPCopyButtons(e.target.parentElement.parentElement)
+        const readMoreOption = await getReadMoreCopyOption()
+        if (readMoreOption) createRPCopyButtons(e.target.parentElement.parentElement)
     } else if (e.target?.className === 'mp-icon fas fa-eye' && e.target?.parentElement?.parentElement?.parentElement?.className === 'flex flex-direction-row links') {
-        createRPCopyButtons(e.target.parentElement.parentElement.parentElement)
+        const readMoreOption = await getReadMoreCopyOption()
+        if (readMoreOption) createRPCopyButtons(e.target.parentElement.parentElement.parentElement)
     } else if (e.target.innerText === 'Email' || e.target.className === 'mp-icon fas fa-envelope') {
         try { closeOpenedItems(true) }
         catch (error) { console.error(error) }
         checkBriefing()
+    } else if (e.target.innerText === 'Send Report' || e.target.id) {
+        remindSua
     }
 
     if (e.target?.parentElement?.parentElement?.className === 'dropdown-menu search-dropdown-menu') {
@@ -294,24 +299,48 @@ function improveMPCoveragePage() {
     greyOutAutomatedBroadcast()
 }
 
+// function getCoverageItems() {
+//     const metadataElements = [...document.getElementsByClassName('media-item-data-block')]
+//         .filter(item => {
+//             const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('syndication-group')
+//             const rootElement = isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('edited') : item.parentElement.parentElement.parentElement.className.includes('edited')
+//         })
+//         .map(item => {
+//             const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('syndication-group')
+//             return {
+//                 headline: isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText : item.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText
+//             }
+//         })
+// }
+
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
-        .filter(item => !item.className.includes('edited')
-            && !item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.children[0]?.children[4]?.children[0]?.className.includes('edited')
-            && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
-            && !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('media-item-syndication'))
+        .filter(item => {
+            const isSynd = item.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('media-item-syndication')
+            const rootElement = isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement : item.parentElement.parentElement.parentElement.parentElement.parentElement
+            return !rootElement.className.includes('edited')
+                && item.firstChild && item.firstChild.innerText !== 'Item ID: {{::item.summary_id}}'
+        }
+        )
     items.forEach(item => {
-        if (coverageOptions.automatedBroadcast && item.firstChild.innerText.startsWith('Item ID: R')) {
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-            item.className += ' edited'
+        const isSynd = item.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('media-item-syndication')
+        const rootElement = isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement : item.parentElement.parentElement.parentElement.parentElement.parentElement
+        if (rootElement.className.includes('unopened')) {
+            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
+            rootElement.className = rootElement.className.replace('unopened', 'edited')
+        } else if (coverageOptions.automatedBroadcast && item.firstChild.innerText.startsWith('Item ID: R')) {
+            rootElement.style.opacity = '0.5'
+            rootElement.className += ' edited'
+        } else if (rootElement.firstElementChild.children[1].innerText.startsWith('Program Preview') || rootElement.firstElementChild.children[1].innerText.startsWith('Newspaper Headlines')) {
+            rootElement.style.opacity = '0.5'
+            rootElement.className += ' edited'
         } else if (coverageOptions.automatedBroadcast && seenIDs.includes(item.firstChild.innerText) && !item.className.includes('master')) {
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-            item.className += ' edited'
+            rootElement.style.opacity = '0.5'
+            rootElement.className += ' edited'
         } else if (coverageOptions.repeatedItems && !item.className.includes('master')) {
             seenIDs.push(item.firstChild.innerText)
             item.className += ' master'
-            console.log(seenIDs, item.className)
-        } else {
+        } else if (!isSynd) {
             const headline = item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText.toLowerCase()
             const itemID = item.firstChild.innerText.slice(9)
             const sectionName = item.children[1].innerText.slice(9)
@@ -342,36 +371,58 @@ function greyOutAutomatedBroadcast() {
                 reclipObj[key] = [item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, itemID, sectionName]
             }
         }
-        const itemOutlet = item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[3].children[0].innerText
+        const itemOutlet = item.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[3]?.firstElementChild?.firstElementChild?.firstElementChild.innerText.replace(/ \(page .*\) | \(page .*\)/, '')
         if (coverageOptions.outletsToIgnore && outletsToIgnore.includes(itemOutlet)) {
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-            item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
+            rootElement.style.opacity = '0.5'
+            rootElement.className += ' edited'
             item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
-        } else if (itemOutlet === 'theguardian.com') {
+        } else if (itemOutlet === 'theguardian.com' || itemOutlet === 'The Guardian') {
             const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
-            if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
-                item.parentElement.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-                item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].className += ' edited'
+            if (headline?.href && (/\/live\//.test(headline.href) || headline.innerText.startsWith('Morning mail'))) {
+                rootElement.style.opacity = '0.5'
+                rootElement.className += ' edited'
                 item.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].children[0].children[4].children[0].click()
             }
         }
     })
 
     if ([...document.getElementsByClassName('mp-icon icon-compact-view')][0]?.parentElement?.className.includes('active')) {
-        const items = [...document.getElementsByClassName('btn-view-toggle')].filter(item => !item.className.includes('edited'))
+        const items = [...document.getElementsByClassName('media-outlet ng-scope')]
+            .filter(item => {
+                const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('media-item-syndication')
+                return isSynd ? !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('edited') : !item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('edited')
+            })
         items.forEach(item => {
-            const outletName = item.parentElement.parentElement.children[3].firstElementChild.children[0].innerText
-            if (outletName === 'theguardian.com') {
-                const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
-                if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
-                    item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-                    item.className += ' edited'
+            const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('media-item-syndication')
+            const outletName = item.innerText.replace(/ \(page .*\) | \(page .*\)/, '')
+            const headline = isSynd ?
+                item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].firstElementChild :
+                item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].firstElementChild
+            // console.log(outletName, headline?.href)
+            if (outletName === 'theguardian.com' || outletName === 'The Guardian') {
+                if (headline?.href && (/\/live\//.test(headline.href) || headline.innerText.startsWith('Morning mail'))) {
+                    headline.parentElement.parentElement.parentElement.className += ' unopened'
+                    headline.parentElement.parentElement.parentElement.style.opacity = '0.5'
                 }
             } else if (outletsToIgnore.includes(outletName)) {
-                item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-                item.className += ' edited'
+                headline.parentElement.parentElement.parentElement.className += ' unopened'
+                headline.parentElement.parentElement.parentElement.style.opacity = '0.5'
             }
         })
+        // const items = [...document.getElementsByClassName('btn-view-toggle')].filter(item => !item.className.includes('edited'))
+        // items.forEach(item => {
+        //     const outletName = item.parentElement.parentElement.children[3].firstElementChild.children[0].innerText
+        //     if (outletName === 'theguardian.com') {
+        //         const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
+        //         if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
+        //             item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+        //             item.className += ' edited'
+        //         }
+        //     } else if (outletsToIgnore.includes(outletName)) {
+        //         item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
+        //         item.className += ' edited'
+        //     }
+        // })
     }
 }
 
@@ -897,7 +948,7 @@ function appendColesIDs() {
             const itemID = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[2 + childrenCount]?.children[1]?.children[0]?.children[1]?.innerText?.slice(11)
             if (!bylineField || !itemID) return
 
-            bylineField.value += `, ID: ${itemID}`
+            if (!bylineField.value.includes(' ID:')) bylineField.value += `, ID: ${itemID}`
             var textfieldUpdated = new Event('input', {
                 bubbles: true,
                 cancelable: true,
@@ -1060,7 +1111,10 @@ function highlightHeadlines(headline, headlinesChecked) {
 
 async function checkingHighlights() {
     if (!window.location.toString().startsWith('https://briefing-api.mediaportal.com/api/download')) return
-    if (document.getElementsByClassName('hide-on-mobile').length > 0) createPlainTextButton()
+    if (document.getElementsByClassName('hide-on-mobile').length > 0) {
+        createPlainTextButton()
+        createWordDocButton()
+    }
     let skipDecapping = await getCheckingCaps()
     let properNouns = await getCheckingPropers()
     let links = document.querySelectorAll('a')
@@ -1154,14 +1208,24 @@ function createPlainTextButton() {
     button.style.position = 'absolute'
     button.style.top = '0'
     button.style.left = '0'
-    button.addEventListener('click', createPlainTextPreview)
+    button.addEventListener('click', () => createPlainTextPreview('plainText.html'))
     document.querySelector('body').appendChild(button)
 }
 
-function createPlainTextPreview() {
+function createWordDocButton() {
+    const button = document.createElement('button')
+    button.innerText = 'Create Word Doc version'
+    button.style.position = 'absolute'
+    button.style.top = '20px'
+    button.style.left = '0'
+    button.addEventListener('click', () => createPlainTextPreview('wordDoc.html'))
+    document.querySelector('body').appendChild(button)
+}
+
+function createPlainTextPreview(url) {
     const briefingData = {
         briefingImage: document.querySelectorAll('img')[1].src,
-        title: document.getElementsByClassName('mj-hero-content')[0].innerText.slice(4),
+        title: document.getElementsByClassName('mj-hero-content')[0] ? document.getElementsByClassName('mj-hero-content')[0].innerText.slice(4) : document.getElementsByClassName('mj-column-per-100')[3]?.firstElementChild?.firstElementChild.children[1].innerText,
         date: document.getElementsByClassName('mj-column-per-50 outlook-group-fix')[0].innerText,
         pdfLink: document.getElementsByClassName('mj-column-per-100 outlook-group-fix')[6].innerText === 'LINKS' ? getPDFLinks() : null,
         anchorLinks: document.getElementsByClassName('hide-on-mobile')[0].innerText.split('   |   '),
@@ -1169,7 +1233,7 @@ function createPlainTextPreview() {
     }
     chrome.runtime.sendMessage({
         action: 'plainTextEmail',
-        url: 'plainText.html',
+        url: url,
         briefingData: briefingData
     })
 }
@@ -1388,7 +1452,7 @@ async function archiveSelectedContent() {
     let selectedFolders = [...document.getElementsByClassName('checkbox-custom')]
         .filter(x => /^Brands|^Competitors|^Personal|^Release Coverage|^Spokespeople/
             .test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart()
-        )
+            )
     if (selectedFolders.length === 0) return
     selectedFolders = selectedFolders.join(', ')
 
@@ -1566,7 +1630,6 @@ async function checkBriefing() {
     setTimeout(() => showErrors(errors), 250)
 
     function checkForErrors(checkData, errorsArray = errors) {
-        console.log(checkData)
         if (checkData.headlineAppend) {
             if (checkData.headlineAppend.outlets) {
                 const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
@@ -1621,6 +1684,10 @@ async function checkBriefing() {
             if (missingAttachments.length > 0) {
                 errorsArray.push(['Missing the following attachments:', ...missingAttachments.map(attachment => `${attachment[0]} (${attachment[1]})`)])
             }
+        } else if (checkData.attachmentTypes) {
+            checkData.attachmentTypes.forEach(fileType => {
+                if (!attachments.some(attachment => attachment.endsWith(fileType[0]))) errorsArray.push(`Missing the ${fileType[1]} attachment`)
+            })
         } else if (attachments.length > 0) errorsArray.push('This briefing does not normally take attachments')
 
         if (checkData.summary && !hasSummary) {
@@ -1697,12 +1764,69 @@ async function createDBPlatformButtons() {
     fixSidebarProperties()
 
     let sidebarSettings = await getSidebarSetting()
+    const checkData = await getBriefingCheck(currentPortal)
 
+    let briefingText = await createBriefingText(checkData)
+    if (briefingText) document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(briefingText)
+
+    let buttonDiv = createSidebarHeaders('NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.', 'PLUGIN', 'PluginButtons')
+
+    let buttons = [['Open all sections/Close all items', expandSectionHeadingsBtn, 'closeItemsBtn'], ['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
+        ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
+
+    for (let i = 0; i < buttons.length; i++) {
+        buttonDiv.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
+    }
+    if (currentPortal === 'dailybriefings_innovation' || currentPortal === 'training_innovation2') {
+        let indSpecificButtons = [['Create synd note - grouped', getIndustrySyndNotesGrouped, 'groupedIndSynd'], ['Create synd note - ungrouped', getIndustrySyndNotesUngrouped, 'ungroupedIndSynd']]
+
+        for (let i = 0; i < indSpecificButtons.length; i++) {
+            buttonDiv.appendChild(createFeatureButton(indSpecificButtons[i][0], indSpecificButtons[i][1], indSpecificButtons[i][2]))
+        }
+        const indResetButton = document.getElementsByClassName('resetButton')[0]
+        indResetButton.style.marginRight = '75px'
+        indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
+    } else if (currentPortal === 'training_centre' || currentPortal === 'db_centre') {
+        buttonDiv.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
+    } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
+        buttonDiv.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs, 'appendColesIDs'))
+    } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
+        buttonDiv.appendChild(createFeatureButton('Append online headlines', appendHAOnlineItems, 'haOnline'))
+    }
+
+    [...buttonDiv.children].forEach((el, ind) => {
+        if (ind === 0) return
+        el.style.display = sidebarSettings['PluginButtons'] ? '' : 'none'
+    })
+
+    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(buttonDiv)
+
+    let staticDiv = createSidebarHeaders('Copy preset text to your clipboard by clicking the icon next to relevant field.\
+    \nYou can set the text that appears here in the extension options or by clicking save below.\
+    \n You can also set hotkeys in the options for these as well. ', 'PRESET TEXT', 'PresetText')
+
+    let staticText = await getStaticText()
+    staticText.forEach(item => createStaticTextField(item, staticDiv))
+    let staticSaveBtn = createFeatureButton('Save', saveStaticText, 'saveStaticTextBtn')
+    staticSaveBtn.style.marginTop = '5px'
+    staticDiv.appendChild(staticSaveBtn)
+
+    let staticChildren = [...staticDiv.children]
+
+    staticChildren.forEach((el, ind) => {
+        if (ind === 0) return
+        el.style.display = sidebarSettings['PresetText'] ? '' : 'none'
+    })
+
+    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(staticDiv)
+}
+
+function createSidebarHeaders(introText, name, arrowLabel) {
     let para = document.createElement('P')
-    para.innerText = 'NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.'
+    para.innerText = introText
 
     let label = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
-    label.innerText = 'PLUGIN'
+    label.innerText = name
     label.style.display = 'flex'
     label.style.justifyContent = 'space-between'
 
@@ -1716,75 +1840,10 @@ async function createDBPlatformButtons() {
     div.appendChild(label)
     div.appendChild(para)
 
-    arrow.addEventListener('click', () => toggleSidebar(arrow, div, 'PluginButtons'))
+    arrow.addEventListener('click', () => toggleSidebar(arrow, div, arrowLabel))
     label.appendChild(arrow)
-    let buttons = [['Open all sections/Close all items', expandSectionHeadingsBtn, 'closeItemsBtn'], ['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
-        ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
 
-    for (let i = 0; i < buttons.length; i++) {
-        div.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
-    }
-    if (currentPortal === 'dailybriefings_innovation' || currentPortal === 'training_innovation2') {
-        let indSpecificButtons = [['Create synd note - grouped', getIndustrySyndNotesGrouped, 'groupedIndSynd'], ['Create synd note - ungrouped', getIndustrySyndNotesUngrouped, 'ungroupedIndSynd']]
-
-        for (let i = 0; i < indSpecificButtons.length; i++) {
-            div.appendChild(createFeatureButton(indSpecificButtons[i][0], indSpecificButtons[i][1], indSpecificButtons[i][2]))
-        }
-        const indResetButton = document.getElementsByClassName('resetButton')[0]
-        indResetButton.style.marginRight = '75px'
-        indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
-    } else if (currentPortal === 'training_centre' || currentPortal === 'db_centre') {
-        div.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
-    } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
-        div.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs, 'appendColesIDs'))
-    } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
-        div.appendChild(createFeatureButton('Append online headlines', appendHAOnlineItems, 'haOnline'))
-    }
-
-    [...div.children].forEach((el, ind) => {
-        if (ind === 0) return
-        el.style.display = sidebarSettings['PluginButtons'] ? '' : 'none'
-    })
-
-    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(div)
-
-    let paraStatic = document.createElement('P')
-    paraStatic.innerText = 'Copy preset text to your clipboard by clicking the icon next to relevant field.\
-    \nYou can set the text that appears here in the extension options or by clicking save below.\
-    \n You can also set hotkeys in the options for these as well. '
-
-    let labelStatic = document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[1].firstElementChild.cloneNode()
-    labelStatic.innerText = 'PRESET TEXT'
-    labelStatic.style.display = 'flex'
-    labelStatic.style.justifyContent = 'space-between'
-
-
-    let divStatic = document.createElement('DIV')
-    divStatic.className = 'flex flex-1 flex-direction-column mp-form-fieldset'
-    divStatic.style.padding = '10px'
-    divStatic.appendChild(labelStatic)
-    divStatic.appendChild(paraStatic)
-
-    let staticText = await getStaticText()
-    staticText.forEach(item => createStaticTextField(item, divStatic))
-    let staticSaveBtn = createFeatureButton('Save', saveStaticText, 'saveStaticTextBtn')
-    staticSaveBtn.style.marginTop = '5px'
-    divStatic.appendChild(staticSaveBtn)
-
-    let arrowStatic = document.createElement('SPAN')
-    arrowStatic.className = 'mat-expansion-indicator'
-    arrowStatic.style.transform = 'rotate(0deg)'
-    arrowStatic.addEventListener('click', () => toggleSidebar(arrowStatic, divStatic, 'PresetText'))
-    labelStatic.appendChild(arrowStatic)
-
-    let staticChildren = [...divStatic.children]
-
-    staticChildren.forEach((el, ind) => {
-        if (ind === 0) return
-        el.style.display = sidebarSettings['PresetText'] ? '' : 'none'
-    })
-
-    document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(divStatic)
+    return div
 }
 
 function fixSidebarProperties() {
@@ -1839,10 +1898,19 @@ function createFeatureButton(innerText, onClickFunc, id) {
     return btn
 }
 
-function createStaticTextField(text, parentDiv) {
+function createStaticTextField(text, parentDiv, header, enteredText) {
+    if (enteredText && enteredText.includes(text)) return
     let div = document.createElement('DIV')
     div.className = 'flex flex-1 flex-direction-row ng-pristine ng-valid ng-touched'
     div.style.paddingBottom = '7px'
+    if (header) {
+        let headerEl = document.createElement('i')
+        headerEl.innerText = header
+        headerEl.style.marginTop = '5px'
+        headerEl.style.marginBottom = '2px'
+        parentDiv.appendChild(headerEl)
+        if (enteredText) enteredText.push(text)
+    }
     let input = document.createElement('input')
     input.className = 'link-name mat-input-element mat-form-field-autofill-control cdk-text-field-autofill-monitored ng-pristine ng-valid ng-touched static-text-field'
     input.value = text
@@ -1880,6 +1948,43 @@ function improveAccessibiltyOptions() {
     secondButton.addEventListener('mousedown', clickDelete)
     parentEle.appendChild(button)
     parentEle.appendChild(secondButton)
+}
+
+async function createBriefingText(checkData) {
+    function createBriefingTextFields(briefingData, enteredText) {
+        if (briefingData.staticLink) briefingData.staticLink.forEach(link => createStaticTextField(link[0], briefingDiv, 'Link:', enteredText))
+        if (briefingData.pdfs) {
+            briefingDiv.appendChild(createElement('p', 'Create and link the following PDFs:\n'))
+            briefingData.pdfs.forEach(pdf => createStaticTextField(pdf[0], briefingDiv, `A ${pdf[1]}. The link text is:`, enteredText))
+        }
+        if (briefingData.links) {
+            briefingDiv.appendChild(createElement('p', 'The following lines of text should be linked before sending the briefing:\n'))
+            briefingData.links.forEach(link => createStaticTextField(link[0], briefingDiv, `A ${link[1]}. The link text is:`, enteredText))
+        }
+        if (briefingData.headerLinks) {
+            briefingDiv.appendChild(createElement('p', 'Ensure the Intro Text field has the following PDFs linked with the prescribed text:\n'))
+            briefingData.headerLinks.forEach(link => createStaticTextField(link[0], briefingDiv, `A ${link[1]}. The link text is:`, enteredText))
+        }
+        if (briefingData.attachments) {
+            briefingDiv.appendChild(createElement('p', 'Create and attach the following PDFs to the briefing:\n'))
+            briefingData.attachments.forEach(attachment => createStaticTextField(attachment[0], briefingDiv, `A ${attachment[1]}. The file name is:`, enteredText))
+        }
+        if (briefingData.attachmentTypes) briefingData.attachments.forEach(attachment => createStaticTextField(attachment[0], briefingDiv, `${attachment[1]}. The file type is:`, enteredText))
+    }
+
+    if (!checkData) return null
+    let briefingDiv = createSidebarHeaders('The details for this briefing\'s attachments & links can be found here (if any)', 'BRIEFING DETAILS', 'BriefingDetails')
+
+    if (checkData.multipleBriefings) {
+        const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+        if (relevantBriefings.length > 0) createBriefingTextFields(relevantBriefings[0])
+    } else if (checkData.multipleSends) {
+        const enteredText = []
+        checkData.multipleSends.forEach(send => createBriefingTextFields(send, enteredText))
+    }
+    else createBriefingTextFields(checkData)
+
+    return briefingDiv.childElementCount === 2 ? null : briefingDiv
 }
 
 function createRPCopyButtons(buttonDiv) {
@@ -1990,12 +2095,17 @@ function waitForMP(classToCheck, fnc, maxRecursion = 15) {
     fnc()
 }
 
-
 function getLastThreeDates() {
     let todaysDate = new Date(new Date().setHours(0, 0, 0, 0))
     let dayBefore = new Date().setDate(todaysDate.getDate() - 1)
     let dayBeforeYesterday = new Date().setDate(todaysDate.getDate() - 3)
     return [todaysDate, dayBefore, dayBeforeYesterday]
+}
+
+const createElement = (type, innerText) => {
+    const el = document.createElement(type)
+    el.innerText = innerText
+    return el
 }
 
 /*
@@ -2008,7 +2118,7 @@ const getAttachments = () => {
     return [...[...document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].children]
         .slice(1, document.getElementsByClassName('flex flex-1 flex-direction-column mp-form-fieldset')[0].childElementCount - 1)[0].children]
         .filter(attachment => attachment.innerText !== '' && !/Briefing PDF\n2MB/.test(attachment.innerText))
-        .map(attachment => attachment.innerText)
+        .map(attachment => attachment?.firstElementChild?.innerText ? attachment?.firstElementChild?.innerText : attachment.innerText)
 }
 
 const getItems = () => {
@@ -2077,6 +2187,13 @@ function getAutoHighlightOption() {
         })
     })
 }
+function getReadMoreCopyOption() {
+    return new Promise(options => {
+        chrome.storage.local.get({ readMoreCopy: true }, function (data) {
+            options(data.readMoreCopy)
+        })
+    })
+}
 function getArchivedContent() {
     return new Promise(options => {
         chrome.storage.local.get({ archivedContent: {} }, function (data) {
@@ -2138,8 +2255,10 @@ function getStaticText() {
 
 function getSidebarSetting() {
     return new Promise(options => {
-        chrome.storage.local.get({ sidebarSetting: { 'PluginButtons': true, 'PresetText': true } }, function (data) {
+        chrome.storage.local.get({ sidebarSetting: { 'PluginButtons': true, 'PresetText': true, 'BriefingDetails': true } }, function (data) {
             options(data.sidebarSetting)
         })
     })
 }
+
+
