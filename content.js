@@ -28,6 +28,7 @@ const metroPapers = ['Weekend Australian', 'Australian Financial Review', 'Sydne
     'West Australian', 'Sunday Times', 'Hobart Mercury', 'Northern Territory News', 'Sunday Territorian', 'Sunday Tasmanian',
     'The Australian', 'AFR Weekend ', 'New Zealand Herald', 'The Dominion Post', 'The Press', 'Otago Daily Times', 'Herald on Sunday', 'Sunday News', 'Sunday Star-Times']
 const outletsToIgnore = ['The National Tribune', 'Morningstar', 'Mirage News', 'Listcorp', 'Australian Online News', 'industry.gov.au', 'WEB MSN Australia', 'Commercial Real Estate', 'Premier of Tasmania', 'Media Releases']
+let briefingCheckData
 
 /*
     ===============================
@@ -96,6 +97,7 @@ window.onload = async function () {
     }
 
     console.log(currentPortal)
+    briefingCheckData = await getBriefingCheck(currentPortal)
 
     if (window.location.toString() !== 'https://app.mediaportal.com/dailybriefings/#/briefings' && window.location.toString() !== 'https://app.mediaportal.com/#/report-builder/view') {
         document.addEventListener('scroll', improveMPCoveragePage)
@@ -177,7 +179,8 @@ document.addEventListener('mousedown', async function (e) {
                 createRPButton()
             }
         }, 2000)
-    } else if (e.target.id === 'btnLogin' || e.target.className === 'css-17cjdhj' || e.target.className === 'css-1uaqxbn') {
+    } else if (e.target.id === 'btnLogin' || ['css-17cjdhj', 'css-1uaqxbn', 'css-v0t2sc', 'css-220sak'].includes(e.target.className)) {
+        console.log('Updating username')
         let lastReset = await getLastContentReset()
         let currentDate = new Date()
         let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
@@ -220,9 +223,10 @@ document.addEventListener('mousedown', async function (e) {
         try { closeOpenedItems(true) }
         catch (error) { console.error(error) }
         checkBriefing()
-    } else if (e.target.innerText === 'Send Report' || e.target.id) {
-        remindSua
     }
+    // else if (e.target.innerText === 'Send Report' || e.target.id) {
+    //     remindSua
+    // }
 
     if (e.target?.parentElement?.parentElement?.className === 'dropdown-menu search-dropdown-menu') {
         waitForMP('control-area clearfix', appendSearchButton)
@@ -298,20 +302,6 @@ function improveMPCoveragePage() {
     removeOutletContactLinks()
     greyOutAutomatedBroadcast()
 }
-
-// function getCoverageItems() {
-//     const metadataElements = [...document.getElementsByClassName('media-item-data-block')]
-//         .filter(item => {
-//             const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('syndication-group')
-//             const rootElement = isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.className.includes('edited') : item.parentElement.parentElement.parentElement.className.includes('edited')
-//         })
-//         .map(item => {
-//             const isSynd = item?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement.className.includes('syndication-group')
-//             return {
-//                 headline: isSynd ? item.parentElement.parentElement.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText : item.parentElement.parentElement.parentElement.firstElementChild.children[1].innerText
-//             }
-//         })
-// }
 
 function greyOutAutomatedBroadcast() {
     let items = [...document.getElementsByClassName('list-unstyled media-item-meta-data-list')]
@@ -409,20 +399,6 @@ function greyOutAutomatedBroadcast() {
                 headline.parentElement.parentElement.parentElement.style.opacity = '0.5'
             }
         })
-        // const items = [...document.getElementsByClassName('btn-view-toggle')].filter(item => !item.className.includes('edited'))
-        // items.forEach(item => {
-        //     const outletName = item.parentElement.parentElement.children[3].firstElementChild.children[0].innerText
-        //     if (outletName === 'theguardian.com') {
-        //         const headline = item?.parentElement?.parentElement?.parentElement?.parentElement?.children[0]?.children[1]?.firstElementChild
-        //         if (headline && (headline.href.includes('/live/') || headline.innerText.startsWith('Morning mail'))) {
-        //             item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-        //             item.className += ' edited'
-        //         }
-        //     } else if (outletsToIgnore.includes(outletName)) {
-        //         item.parentElement.parentElement.parentElement.parentElement.style.opacity = '0.5'
-        //         item.className += ' edited'
-        //     }
-        // })
     }
 }
 
@@ -795,7 +771,6 @@ function closeOpenedItems(skipMarkAsUnread) {
 
     let openedItems = [...document.querySelectorAll('mp-mediaitem-card')]
         .filter(item => item.firstElementChild.className.includes('mat-expanded'))
-    console.log(openedItems)
 
     openedItems.forEach(item => {
         item.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild.click()
@@ -905,18 +880,20 @@ function getIndustrySyndNotesUngrouped() {
 
 }
 
-function fixDHSAFRItems() {
+function appendOutletHeadlines(mediaOutlets, appendedText) {
+    const mediaOutletsSplit = mediaOutlets.split(', ')
     try {
         expandSectionHeadings()
         const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
-            .filter(headline => (headline.parentElement.children[1].children[0].innerText.startsWith('Australian Financial Review') || headline.parentElement.children[1].children[0].innerText.startsWith('AFR Weekend'))
-                && (/p[0-9]{1,2}$/).test(headline.parentElement.children[1].children[0].innerText))
+            .filter(
+                headline => mediaOutletsSplit.includes(headline.parentElement.children[1].children[0].innerText.split(' , ')[0])
+            )
         console.log(headlines)
         headlines.forEach(headline => {
             headline.click()
             const headlineField = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[0]?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
             if (!headlineField) return
-            headlineField.value = headlineField.value += ' (Subscription only)'
+            headlineField.value = headlineField.value += ` ${appendedText}`
             console.log(headlineField.value)
             var textfieldUpdated = new Event('input', {
                 bubbles: true,
@@ -964,19 +941,29 @@ function appendColesIDs() {
     }
 }
 
-function appendHAOnlineItems() {
+function appendMediaTypeHeadlines(mediaTypes, appendedText) {
+    const mediaTypesToClasses = {
+        print: ['fa-file-alt'],
+        broadcast: ['fa-video|fa-volume-up'],
+        online: ['fa-cloud']
+    }
+
+    if (!mediaTypesToClasses[mediaTypes]) {
+        alert('Invalid media type entered; report this error to your Team Leader so they can fix it')
+        return
+    }
+
     try {
         expandSectionHeadings()
         const headlines = [...document.body.getElementsByClassName('headline mp-page-ellipsis headerRow')]
-            .filter(headline => headline?.parentElement?.children[1]?.children[1]?.children[2]?.firstElementChild?.className.includes('fa-cloud'))
+            .filter(headline => new RegExp(mediaTypesToClasses[mediaTypes]).test(headline?.parentElement?.children[1]?.children[1]?.children[2]?.firstElementChild?.className))
         console.log(headlines)
         headlines.forEach(headline => {
             try {
                 headline.click()
                 const headlineField = headline?.parentElement?.parentElement?.parentElement?.parentElement?.children[1]?.firstElementChild?.firstElementChild?.firstElementChild?.children[0]?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild?.firstElementChild
                 if (!headlineField) return
-                headlineField.value = headlineField.value += ' - ONLINE ONLY'
-                console.log(headlineField.value)
+                headlineField.value = headlineField.value += ` ${appendedText}`
                 var textfieldUpdated = new Event('input', {
                     bubbles: true,
                     cancelable: true,
@@ -1032,7 +1019,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
             byline[2] = '<span style=\'background-color:#FDFF47;\'>' + byline[2] + '</span>'
         } else if (splitByline.length === 1 && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[2])) {
             byline[2] = '<span style=\'background-color:#00FF00;\'>' + byline[2] + '</span>'//Possible proper noun;
-        } else if (splitByline.length > 2 && byline[2].search(/and/) === -1) {
+        } else if (splitByline.length > 2 && byline[2].search(/and|&/) === -1) {
             if (!/ van | le /i.test(byline[2])) {
                 byline[2] = '<span style=\'background-color:#00FF00;\'>' + byline[2] + '</span>'//Possible proper noun
             }
@@ -1069,7 +1056,7 @@ function cleanUpAuthorLines(byline, isIndustry) {
             byline[3] = '<span style=\'background-color:#FDFF47;\'>' + byline[3] + '</span>'
         } else if (splitByline.length === 1 && !/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/.test(byline[3])) {
             byline[3] = '<span style=\'background-color:#00FF00;\'>' + byline[3] + '</span>'//Possible proper noun;
-        } else if (splitByline.length > 2 && byline[3].search(/and/) === -1) {
+        } else if (splitByline.length > 2 && byline[3].search(/and|&/) === -1) {
             if (!/ van | le /i.test(byline[3])) {
                 byline[3] = '<span style=\'background-color:#00FF00;\'>' + byline[3] + '</span>'//Possible proper noun
             }
@@ -1243,14 +1230,15 @@ function getSectionItems(sectionNames) {
     const items = [...document.getElementsByClassName('item-headline-hook')]
 
     items.forEach(item => {
+        console.log(item)
         const section = item.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.children[1].innerText
         const completeItem = {
             headline: item.innerText,
             metadata: item.parentElement.parentElement.children[1].firstElementChild.innerText,
             summary: item.parentElement.parentElement.children[2].innerText,
             readMoreLink: [
-                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1].firstElementChild.firstElementChild.firstElementChild.innerText,
-                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1].firstElementChild.firstElementChild.firstElementChild.href
+                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1]?.firstElementChild?.firstElementChild?.firstElementChild?.innerText,
+                item.parentElement.parentElement.children[item.parentElement.parentElement.childElementCount - 1]?.firstElementChild?.firstElementChild?.firstElementChild?.href
             ],
             syndicationLinks: item.parentElement.parentElement.childElementCount === 5 ? item.parentElement.parentElement.children[3].firstElementChild.firstElementChild.firstElementChild.innerHTML : null
         }
@@ -1452,7 +1440,7 @@ async function archiveSelectedContent() {
     let selectedFolders = [...document.getElementsByClassName('checkbox-custom')]
         .filter(x => /^Brands|^Competitors|^Personal|^Release Coverage|^Spokespeople/
             .test(x.id) && x.checked).map(x => x.parentElement.children[1].innerText.trimStart()
-            )
+        )
     if (selectedFolders.length === 0) return
     selectedFolders = selectedFolders.join(', ')
 
@@ -1580,7 +1568,8 @@ function copywithoutSubheadings() {
 */
 
 async function checkBriefing() {
-    const checkData = await getBriefingCheck(currentPortal)
+    // const checkData = await getBriefingCheck(currentPortal)
+    console.log(briefingCheckData)
 
     let errors = []
     const items = getItems()
@@ -1598,50 +1587,49 @@ async function checkBriefing() {
         !document.getElementsByClassName('mat-checkbox-input cdk-visually-hidden')[0].checked) {
         errors.push('Send time not checked')
     }
+
+    if (items.filter(item => item.headline.toLowerCase() === 'no headline').length > 0) {
+        errors.push('One or more items have \'No Headline\' as their headline. These should be renamed before sending')
+    }
+
     if (filteredLinks.length > 0) {
         errors.push('One or more PDF Links need renaming')
     }
 
-    if (checkData) {
-        if (checkData.subjectLineCantInclude) {
-            if (document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.subjectLineCantInclude)) {
-                errors.push('Subject line needs updating')
-            }
-        }
-        if (checkData.briefingNameCantInclude) {
-            if (document.getElementsByClassName('titleFormField')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.includes(checkData.briefingNameCantInclude)) {
-                errors.push('Report title needs updating')
-            }
-        }
-        if (checkData.multipleBriefings) {
-            const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
-            if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
-        } else if (checkData.multipleSends) {
-            const possibleErrors = checkData.multipleSends.map(send => { return { name: send.name, errors: [], checks: send } })
+    if (briefingCheckData) {
+        if (briefingCheckData.multipleSends) {
+            const possibleErrors = briefingCheckData.briefings.map(send => {
+                return { name: send.name, errors: [], checks: send }
+            })
             possibleErrors.forEach(send => checkForErrors(send.checks, send.errors))
-            console.log(possibleErrors)
             if (possibleErrors.every(send => send.errors.length > 0)) {
                 possibleErrors.forEach(send => errors.push([`If this is the ${send.name} send:`, ...send.errors]))
             }
-        } else checkForErrors(checkData)
+        } else {
+            const relevantBriefings = briefingCheckData.briefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+            if (relevantBriefings.length > 0) checkForErrors(relevantBriefings[0])
+        }
     }
 
     if (errors.length === 0) return
     setTimeout(() => showErrors(errors), 250)
 
     function checkForErrors(checkData, errorsArray = errors) {
+        console.log(checkData)
         if (checkData.headlineAppend) {
-            if (checkData.headlineAppend.outlets) {
-                const relevantOutlets = items.filter(item => checkData.headlineAppend.outlets.includes(item.mediaOutlet))
-                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errorsArray.push(`One or more headlines for the ${checkData.headlineAppend.outlets.join(' / ')} is missing ${checkData.headlineAppend.appendedText}`)
+            checkData.headlineAppend.forEach(check => {
+                if (check.mediaOutlets.length > 0) {
+                    const relevantOutlets = items.filter(item => check.mediaOutlets.split(', ').includes(item.mediaOutlet))
+                    if (relevantOutlets.filter(item => item.headline.includes(check.appendedText)).length !== relevantOutlets.length) {
+                        errorsArray.push(`One or more headlines for the ${check.mediaOutlets} is missing ${check.appendedText}`)
+                    }
+                } else if (check.mediaTypes.length > 0) {
+                    const relevantOutlets = items.filter(item => check.mediaTypes.includes(item.mediaType))
+                    if (relevantOutlets.filter(item => item.headline.includes(check.appendedText)).length !== relevantOutlets.length) {
+                        errorsArray.push(`One or more ${check.mediaTypes} headlines is missing '${check.appendedText}'`)
+                    }
                 }
-            } else if (checkData.headlineAppend.mediaTypes) {
-                const relevantOutlets = items.filter(item => checkData.headlineAppend.mediaTypes.includes(item.mediaType))
-                if (relevantOutlets.filter(item => item.headline.includes(checkData.headlineAppend.appendedText)).length !== relevantOutlets.length) {
-                    errorsArray.push(`One or more ${checkData.headlineAppend.mediaTypes.join(' / ')} headlines is missing '${checkData.headlineAppend.appendedText}'`)
-                }
-            }
+            })
         }
 
         if (checkData.excludeOutlets && items.filter(item => checkData.excludeOutlets.includes(item.mediaOutlet)).length > 0) {
@@ -1652,41 +1640,41 @@ async function checkBriefing() {
         }
 
         if (checkData.pdfs || checkData.links) {
-            const missingPDFs = checkData.pdfs ? checkData.pdfs.filter(pdf => !links.includes(pdf[0])) : null
-            const missingLinks = checkData.links ? checkData.links.filter(link => unlinkedText.includes(link[0])) : null
+            const missingPDFs = checkData.pdfs ? checkData.pdfs.filter(pdf => !links.includes(pdf.title)) : null
+            const missingLinks = checkData.links ? checkData.links.filter(link => unlinkedText.includes(link.title)) : null
             if (missingPDFs && missingPDFs.length > 0 && missingLinks && missingLinks.length > 0) {
-                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`), ...missingLinks.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf.title} (${pdf.type})`), ...missingLinks.map(pdf => `${pdf.title} (${pdf.type})`)])
             } else if (missingPDFs && missingPDFs.length > 0) {
-                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+                errorsArray.push(['Missing the following links:', ...missingPDFs.map(pdf => `${pdf.title} (${pdf.type})`)])
             } else if (missingLinks && missingLinks.length > 0) {
-                errorsArray.push(['Missing the following links:', ...missingLinks.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+                errorsArray.push(['Missing the following links:', ...missingLinks.map(pdf => `${pdf.title} (${pdf.type})`)])
             }
         } else if (links.length > 0 && !checkData.pdfs) {
             errorsArray.push('This briefing does not normally take linked attachments')
         }
 
         if (checkData.headerLinks) {
-            const missingHeaderLinks = checkData.headerLinks.filter(link => headerLinks.includes(link[0]))
+            const missingHeaderLinks = checkData.headerLinks.filter(link => headerLinks.includes(link.title))
             if (missingHeaderLinks.length > 0) {
-                errorsArray.push(['Missing the following links in the header:', ...missingHeaderLinks.map(link => `${link[0]} (${link[1]})`)])
+                errorsArray.push(['Missing the following links in the header:', ...missingHeaderLinks.map(link => `${link.title} (${link.type})`)])
             }
         }
 
         if (checkData.excludePDFs) {
-            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf[0]))
+            const missingPDFs = checkData.excludePDFs.filter(pdf => links.includes(pdf.title))
             if (missingPDFs.length > 0) {
-                errorsArray.push(['The following links shouldn\'t be included:', ...missingPDFs.map(pdf => `${pdf[0]} (${pdf[1]})`)])
+                errorsArray.push(['The following links shouldn\'t be included:', ...missingPDFs.map(pdf => `${pdf.title} (${pdf.type})`)])
             }
         }
 
         if (checkData.attachments) {
-            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => briefingAttachment.startsWith(attachment[0])))
+            const missingAttachments = checkData.attachments.filter(attachment => !attachments.some(briefingAttachment => briefingAttachment.startsWith(attachment.title)))
             if (missingAttachments.length > 0) {
-                errorsArray.push(['Missing the following attachments:', ...missingAttachments.map(attachment => `${attachment[0]} (${attachment[1]})`)])
+                errorsArray.push(['Missing the following attachments:', ...missingAttachments.map(attachment => `${attachment.title} (${attachment.type})`)])
             }
         } else if (checkData.attachmentTypes) {
             checkData.attachmentTypes.forEach(fileType => {
-                if (!attachments.some(attachment => attachment.endsWith(fileType[0]))) errorsArray.push(`Missing the ${fileType[1]} attachment`)
+                if (!attachments.some(attachment => attachment.endsWith(fileType.title))) errorsArray.push(`Missing the ${fileType.type} attachment`)
             })
         } else if (attachments.length > 0) errorsArray.push('This briefing does not normally take attachments')
 
@@ -1700,7 +1688,7 @@ function showErrors(errors) {
     const parentDiv = document.createElement('div')
     const headerDiv = document.createElement('div')
     const title = document.createElement('b')
-    title.innerText = 'Several possible errors detected'
+    title.innerText = `${errors.length === 1 ? 'One' : errors.length === 2 ? 'Two' : 'Several'} possible ${errors.length > 1 ? 'errors' : 'error'} detected`
     title.style.color = 'red'
     const button = document.createElement('button')
     button.innerText = 'more'
@@ -1766,13 +1754,20 @@ async function createDBPlatformButtons() {
     let sidebarSettings = await getSidebarSetting()
     const checkData = await getBriefingCheck(currentPortal)
 
-    let briefingText = await createBriefingText(checkData)
+    let briefingText = createBriefingText(checkData)
     if (briefingText) document.getElementsByClassName('mp-page-inner-tools mp-form')[0].appendChild(briefingText)
 
     let buttonDiv = createSidebarHeaders('NB: Before using any of these, scroll to the bottom of the report and ensure all items have loaded in.', 'PLUGIN', 'PluginButtons')
 
-    let buttons = [['Open all sections/Close all items', expandSectionHeadingsBtn, 'closeItemsBtn'], ['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'], ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
-        ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'], ['Fix bylines', fixBylines, 'bylineFixBtn'], ['Fix print syndications', fixPressSyndications, 'fixPressBtn']]
+    let buttons = [
+        ['Open all sections/Close all items', expandSectionHeadingsBtn, 'closeItemsBtn'],
+        ['Fix print syndications', fixPressSyndications, 'fixPressBtn'],
+        ['Fix bylines', fixBylines, 'bylineFixBtn'],
+        ['Highlight syndications', getPossibleSyndications, 'syndHighlightBtn'],
+        ['Highlight byline errors', highlightBylineErrors, 'bylineHighlightBtn'],
+        ['Highlight broadcast for recapping', highlightBroadcastItems, 'highlightBroadcastBtn'],
+
+    ]
 
     for (let i = 0; i < buttons.length; i++) {
         buttonDiv.appendChild(createFeatureButton(buttons[i][0], buttons[i][1], buttons[i][2]))
@@ -1786,13 +1781,27 @@ async function createDBPlatformButtons() {
         const indResetButton = document.getElementsByClassName('resetButton')[0]
         indResetButton.style.marginRight = '75px'
         indResetButton.firstElementChild.innerHTML = indResetButton.firstElementChild.innerHTML.replace('Reset', 'Stupid sexy Flanders')
-    } else if (currentPortal === 'training_centre' || currentPortal === 'db_centre') {
-        buttonDiv.appendChild(createFeatureButton('Append AFR headlines', fixDHSAFRItems, 'dhsAFR'))
     } else if (currentPortal.startsWith('db_colestraining') || currentPortal === 'db_coles') {
         buttonDiv.appendChild(createFeatureButton('Append IDs to bylines', appendColesIDs, 'appendColesIDs'))
-    } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
-        buttonDiv.appendChild(createFeatureButton('Append online headlines', appendHAOnlineItems, 'haOnline'))
     }
+
+    if (checkData) {
+        const relevantBriefings = checkData.briefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+        if (relevantBriefings.length === 1 && relevantBriefings[0].headlineAppend) {
+            relevantBriefings[0].headlineAppend.forEach(requirement => {
+                if (requirement.mediaTypes) {
+                    buttonDiv.appendChild(createFeatureButton(`Append ${requirement.mediaTypes} headlines`, () => appendMediaTypeHeadlines(requirement.mediaTypes, requirement.appendedText), 'haOnline'))
+                } else if (requirement.mediaOutlets) {
+                    buttonDiv.appendChild(createFeatureButton('Append outlet headlines', () => appendOutletHeadlines(requirement.mediaOutlets, requirement.appendedText), 'dhsAFR'))
+                }
+            })
+        }
+    }
+
+    // if (currentPortal === 'training_centre' || currentPortal === 'db_centre' || currentPortal === 'dailybriefings_health2') {
+    //     buttonDiv.appendChild(createFeatureButton('Append AFR headlines', appendOutletHeadlines, 'dhsAFR'))
+    // } else if (currentPortal === 'dailybriefings_homeaffairs' || currentPortal === 'training_homeaffairs') {
+    // }
 
     [...buttonDiv.children].forEach((el, ind) => {
         if (ind === 0) return
@@ -1950,39 +1959,38 @@ function improveAccessibiltyOptions() {
     parentEle.appendChild(secondButton)
 }
 
-async function createBriefingText(checkData) {
+function createBriefingText(checkData) {
     function createBriefingTextFields(briefingData, enteredText) {
-        if (briefingData.staticLink) briefingData.staticLink.forEach(link => createStaticTextField(link[0], briefingDiv, 'Link:', enteredText))
+        if (briefingData.staticLink) briefingData.staticLink.forEach(link => createStaticTextField(link.title, briefingDiv, 'Link:', enteredText))
         if (briefingData.pdfs) {
             briefingDiv.appendChild(createElement('p', 'Create and link the following PDFs:\n'))
-            briefingData.pdfs.forEach(pdf => createStaticTextField(pdf[0], briefingDiv, `A ${pdf[1]}. The link text is:`, enteredText))
+            briefingData.pdfs.forEach(pdf => createStaticTextField(pdf.title, briefingDiv, `A ${pdf.type}. The link text is:`, enteredText))
         }
         if (briefingData.links) {
             briefingDiv.appendChild(createElement('p', 'The following lines of text should be linked before sending the briefing:\n'))
-            briefingData.links.forEach(link => createStaticTextField(link[0], briefingDiv, `A ${link[1]}. The link text is:`, enteredText))
+            briefingData.links.forEach(link => createStaticTextField(link.title, briefingDiv, `A ${link.type}. The link text is:`, enteredText))
         }
         if (briefingData.headerLinks) {
             briefingDiv.appendChild(createElement('p', 'Ensure the Intro Text field has the following PDFs linked with the prescribed text:\n'))
-            briefingData.headerLinks.forEach(link => createStaticTextField(link[0], briefingDiv, `A ${link[1]}. The link text is:`, enteredText))
+            briefingData.headerLinks.forEach(link => createStaticTextField(link.title, briefingDiv, `A ${link.type}. The link text is:`, enteredText))
         }
         if (briefingData.attachments) {
             briefingDiv.appendChild(createElement('p', 'Create and attach the following PDFs to the briefing:\n'))
-            briefingData.attachments.forEach(attachment => createStaticTextField(attachment[0], briefingDiv, `A ${attachment[1]}. The file name is:`, enteredText))
+            briefingData.attachments.forEach(attachment => createStaticTextField(attachment.title, briefingDiv, `A ${attachment.type}. The file name is:`, enteredText))
         }
-        if (briefingData.attachmentTypes) briefingData.attachments.forEach(attachment => createStaticTextField(attachment[0], briefingDiv, `${attachment[1]}. The file type is:`, enteredText))
+        if (briefingData.attachmentTypes) briefingData.attachments.forEach(attachment => createStaticTextField(attachment.type, briefingDiv, `${attachment.title}. The file type is:`, enteredText))
     }
 
     if (!checkData) return null
     let briefingDiv = createSidebarHeaders('The details for this briefing\'s attachments & links can be found here (if any)', 'BRIEFING DETAILS', 'BriefingDetails')
-
-    if (checkData.multipleBriefings) {
-        const relevantBriefings = checkData.multipleBriefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
-        if (relevantBriefings.length > 0) createBriefingTextFields(relevantBriefings[0])
-    } else if (checkData.multipleSends) {
+    if (checkData.multipleSends) {
         const enteredText = []
-        checkData.multipleSends.forEach(send => createBriefingTextFields(send, enteredText))
+        checkData.briefings.forEach(send => createBriefingTextFields(send, enteredText))
+    } else {
+        const relevantBriefings = checkData.briefings.filter(briefing => document.getElementsByClassName('emailSubjectInput')[0].firstElementChild.firstElementChild.firstElementChild.firstElementChild.value.startsWith(briefing.subjectLine))
+        if (relevantBriefings.length > 0) createBriefingTextFields(relevantBriefings[0])
     }
-    else createBriefingTextFields(checkData)
+
 
     return briefingDiv.childElementCount === 2 ? null : briefingDiv
 }

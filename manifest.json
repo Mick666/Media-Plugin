@@ -1,16 +1,28 @@
 {
     "manifest_version": 2,
     "name": "MP Improvements",
-    "version": "0.7.2.4",
+    "version": "0.7.3.5",
     "options_page": "options.html",
     "content_scripts": [
         {
-            "matches": ["https://app.mediaportal.com/*", "https://*.mediaportal.com/*", "https://mick666.github.io/SummsLinker/", "https://docs.google.com/*", "https://Mick666.github.io/Summs-Linker-Redux"],
-            "js": ["content.js"]
+            "matches": [
+                "https://app.mediaportal.com/*",
+                "https://*.mediaportal.com/*",
+                "https://mick666.github.io/SummsLinker/",
+                "https://docs.google.com/*",
+                "https://Mick666.github.io/Summs-Linker-Redux",
+                "https://mp-briefing-checking-default-rtdb.asia-southeast1.firebasedatabase.app/"
+            ],
+            "js": [
+                "content.js"
+            ]
         }
     ],
     "permissions": [
-        "clipboardWrite", "clipboardRead", "storage", "tabs"
+        "clipboardWrite",
+        "clipboardRead",
+        "storage",
+        "tabs"
     ],
     "icons": {
         "16": "images/icon-16.png",
@@ -22,7 +34,7 @@
         "page": "background.html"
     },
     "commands": {
-        "1_paste" : {
+        "1_paste": {
             "description": "Copy without linebreaks",
             "suggested_key": {
                 "default": "Ctrl+Shift+A"
@@ -37,7 +49,7 @@
         "static-text-1": {
             "description": "Static text #1"
         },
-        "static-text-2" : {
+        "static-text-2": {
             "description": "Static text #2"
         },
         "static-text-3": {
