@@ -1,5 +1,5 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "MP Improvements",
     "version": "0.7.3.5",
     "options_page": "options.html",
@@ -30,8 +30,8 @@
         "128": "images/icon-128.png"
     },
     "background": {
-        "persistent": false,
-        "page": "background.html"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "commands": {
         "1_paste": {

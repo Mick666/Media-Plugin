@@ -37,10 +37,16 @@ let briefingCheckData
 */
 
 chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
+    async function (request, sender, sendResponse) {
         if (request.action === 'getHighlightedText') {
-            sendResponse({ copy: window.getSelection().toString() })
+            if (!document.getElementById('sandbox')) {
+                const txtArea = document.createElement('textarea')
+                txtArea.id = 'sandbox'
+                txtArea.style.display = 'none'
+                document.getElementsByClassName('container')[0].appendChild(txtArea)
+            }
             lastHighlightedElement = document.getSelection().baseNode
+            sendResponse({ copy: window.getSelection().toString(), document: document.getElementById('sandbox') })
         } else if (request.action === 'changeCase') {
             changeCase()
         } else if (request.action === 'changeToSentenceCase') {
@@ -51,6 +57,23 @@ chrome.runtime.onMessage.addListener(
             clickMerge()
         } else if (request.action === 'delete') {
             clickDelete()
+        } else if (request.action === 'getDocument') {
+            if (!document.getElementById('sandbox')) {
+                const txtArea = document.createElement('textarea')
+                txtArea.id = 'sandbox'
+                txtArea.style.display = 'none'
+                document.getElementsByClassName('container')[0].appendChild(txtArea)
+            }
+            sendResponse({ document: document.getElementById('sandbox') })
+        } else if (request.action === 'executeCopy') {
+            // document.execCommand('copy')
+            navigator.clipboard.writeText(request.text)
+        } else if (request.action === 'executePaste') {
+            // document.execCommand('paste')
+            const txt = await navigator.clipboard.readText()
+            sendResponse({ text: txt })
+            request.links.push(txt)
+            return true
         }
     }
 )
@@ -180,7 +203,6 @@ document.addEventListener('mousedown', async function (e) {
             }
         }, 2000)
     } else if (e.target.id === 'btnLogin' || ['css-17cjdhj', 'css-1uaqxbn', 'css-v0t2sc', 'css-220sak'].includes(e.target.className)) {
-        console.log('Updating username')
         let lastReset = await getLastContentReset()
         let currentDate = new Date()
         let timeDif = (currentDate.getTime() - new Date(lastReset).getTime()) / 1000 / 3600
@@ -1340,8 +1362,9 @@ function changeToSentenceCase() {
 function setFieldValue(data) {
     if (!lastHighlightedElement || !lastHighlightedElement.parentElement.parentElement.className === 'readmore shown' ||
         (!lastHighlightedElement.parentElement.nodeName === 'MARK' && !lastHighlightedElement.parentElement.parentElement.parentElement.className === 'readmore shown')) return
-
-    let textBox = document.getSelection().baseNode.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+    console.log(document.getSelection())
+    let textBox = lastHighlightedElement.parentElement.nodeName === 'MARK' ? document.getSelection().baseNode.parentElement.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
+        : document.getSelection().baseNode.parentElement.parentElement.parentElement.firstElementChild.firstElementChild.firstElementChild.firstElementChild.firstElementChild
     let textBoxData = textBox.value.split('[...]')
     if (textBoxData.length === 1) {
         textBox.value = data
@@ -2268,5 +2291,3 @@ function getSidebarSetting() {
         })
     })
 }
-
-

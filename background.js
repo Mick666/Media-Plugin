@@ -1,3 +1,4 @@
+import fetchFromServer from './briefingChecks.js'
 //  To set the clipboard's text, we need to use a background html page with a dummy field we can set the value of.
 //  To get the highlighted text though, we need to send a message to the content.js file, and get the text in the response.
 //  Some of these are to save typing, so we don't need to send the message to the content.js file.
@@ -19,6 +20,7 @@ const defaultProperNouns = ['British', 'Australian', 'Australia', 'Scott', 'Morr
 
 chrome.commands.onCommand.addListener(function (command) {
     console.log(command)
+    console.log(navigator)
     if (command === '1_paste') {
         chrome.storage.local.get({ decap: true }, function (result) {
             getHighlightedText(command, result.decap)
@@ -28,7 +30,8 @@ chrome.commands.onCommand.addListener(function (command) {
             getHighlightedText(command, result.decap)
         })
     } else if (command === 'l_addLink') {
-        addLink()
+        executePaste(addLinks)
+        return true
     } else if (command === 'z_mergeHotkey') {
         platformHotkey('merge')
     } else if (command === 'z_deleteHotkey') {
@@ -54,7 +57,19 @@ chrome.commands.onCommand.addListener(function (command) {
             getHighlightedText(command, result.decap)
         })
     } else {
+        console.log('Else')
         copy('', command)
+    }
+})
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (!request) return
+    if (request.action === 'getBriefingCheck') {
+        fetchFromServer(request.data).then(data => sendResponse({ briefingChecks: data }))
+        return true
+        // chrome.tabs.query({}, function () {
+        //     sendResponse({ briefingChecks: fetchFromServer(request.data) })
+        // })
     }
 })
 
@@ -84,11 +99,13 @@ function getTextFieldReplace() {
 
 // This sets the clipboard based on the key combination, cleaning it up in some cases, setting it to a commonly used term in others.
 async function copy(str, setting, decap = true) {
-    console.log(str, setting)
     let properNouns = await getCopyPropers()
     let skipDecapping = await getCopyCaps()
     let textFieldReplaceOption = await getTextFieldReplace()
-    var sandbox = document.getElementById('sandbox')
+    // var sandbox
+    // if (!doc.getElementById('sandbox')) {
+    //     sandbox = doc.createElement('textarea')
+    // } else sandbox = doc.getElementById('sandbox')
     if (setting === '1_paste') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
             .replace(/\(pictured\) |\(pictured left\) |\(pictured right\) /, '')
@@ -102,10 +119,7 @@ async function copy(str, setting, decap = true) {
                 else words[i] = decapWord(words[i], i)
             }
         }
-        sandbox.value = words.join(' ')
-        sandbox.select()
-        document.execCommand('copy')
-        sandbox.value = ('')
+        executeCopy(words.join(' '))
         if (textFieldReplaceOption) updateField(words.join(' '))
     } else if (setting === '2_abc') {
         let words = str.replace(/, pictured,|, pictured left,|, pictured right,/, '')
@@ -131,29 +145,18 @@ async function copy(str, setting, decap = true) {
                 else words[i] = decapWord(words[i], i)
             }
         }
-        sandbox.value = words.join(' ')
-        sandbox.select()
-        document.execCommand('copy')
-        sandbox.value = ('')
+        executeCopy(words.join(' '))
         if (textFieldReplaceOption) updateField(words.join(' '))
     } else if (setting === 'copyIDs') {
-        sandbox.value = str
-        sandbox.select()
-        document.execCommand('copy')
-        sandbox.value = ('')
+        executeCopy(str)
     } else if (setting === 'copyStaticText' || setting === 'copyIndSyndNote') {
-        sandbox.value = str
-        sandbox.select()
-        document.execCommand('copy')
-        sandbox.value = ('')
+        console.log('Static text', str)
+        executeCopy(str)
     } else {
         chrome.storage.local.get({ staticText: ['Similar coverage reported by: ', 'Also in other publications'] }, function (result) {
             console.log(result)
             console.log(setting)
-            sandbox.value = result.staticText[commandObj[setting]]
-            sandbox.select()
-            document.execCommand('copy')
-            sandbox.value = ('')
+            executeCopy(result.staticText[commandObj[setting]])
         })
     }
 }
@@ -162,7 +165,7 @@ async function copy(str, setting, decap = true) {
 function getHighlightedText(setting, decap) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'getHighlightedText' }, function (response) {
-            copy(response.copy, setting, decap)
+            copy(response.copy, setting, decap, response.document)
         })
     })
 }
@@ -179,6 +182,21 @@ function changeToSentenceCase() {
     })
 }
 
+function executeCopy(txt) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'executeCopy', text: txt })
+    })
+}
+
+async function executePaste(fnc) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'executePaste', links: savedLinks })
+    })
+}
+
+function addLinks(link) {
+    savedLinks.push(link)
+}
 
 function platformHotkey(text) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -213,21 +231,8 @@ function decapWord(word, i, nextWord, properNouns, skipDecapping) {
     return word
 }
 
-function addLink() {
-    var sandbox = document.getElementById('sandbox')
-    sandbox.select()
-    document.execCommand('paste')
-    savedLinks.push(sandbox.value)
-    console.log(savedLinks)
-    sandbox.value = ('')
-}
-
 function openLinks() {
-    var sandbox = document.getElementById('sandbox')
-    sandbox.value = savedLinks.join('\n').replace(' ', '')
-    sandbox.select()
-    document.execCommand('copy')
-    sandbox.value = ('')
+    executeCopy(savedLinks.join('\n').replace(' ', ''))
     console.log(savedLinks)
     for (let i = 0; i < savedLinks.length; i++) {
         chrome.tabs.create({ url: savedLinks[i], active: false })
@@ -245,13 +250,9 @@ function saveID() {
     })
 }
 
-function copyID() {
-    console.log(savedIDs)
-    var sandbox = document.getElementById('sandbox')
+function copyID(sandbox) {
     sandbox.value = savedIDs.join('\n').replace(' ', '')
-    sandbox.select()
-    document.execCommand('copy')
-    sandbox.value = ('')
+    executeCopy(savedIDs.join('\n').replace(' ', ''))
 }
 
 function deleteIDs() {
