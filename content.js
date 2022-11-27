@@ -1123,6 +1123,7 @@ async function checkingHighlights() {
     if (document.getElementsByClassName('hide-on-mobile').length > 0) {
         createPlainTextButton()
         createWordDocButton()
+        createAccessibilityButton()
     }
     let skipDecapping = await getCheckingCaps()
     let properNouns = await getCheckingPropers()
@@ -1228,6 +1229,16 @@ function createWordDocButton() {
     button.style.top = '20px'
     button.style.left = '0'
     button.addEventListener('click', () => createPlainTextPreview('wordDoc.html'))
+    document.querySelector('body').appendChild(button)
+}
+
+function createAccessibilityButton() {
+    const button = document.createElement('button')
+    button.innerText = 'Create Accessibility Word Doc version'
+    button.style.position = 'absolute'
+    button.style.top = '40px'
+    button.style.left = '0'
+    button.addEventListener('click', () => createPlainTextPreview('wordDocAccess.html'))
     document.querySelector('body').appendChild(button)
 }
 

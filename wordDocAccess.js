@@ -1,0 +1,86 @@
+window.onload = async function () {
+    const briefingData = await getBriefingData()
+
+    document.getElementById('briefing-logo').src = briefingData.briefingImage
+    document.getElementById('briefing-title').innerText = briefingData.title
+    document.getElementById('briefing-date').innerText = briefingData.date
+    // briefingData.anchorLinks.forEach((link, ind) => {
+    //     const linkEl = createElement('a', 'briefing-anchorlink briefing-link', link)
+    //     linkEl.href = `#section-${ind}`
+    //     document.getElementById('briefing-links-container').appendChild(linkEl)
+    //     if (ind+1 !== briefingData.anchorLinks.length) document.getElementById('briefing-links-container').appendChild(createElement('span', 'anchor-divider', '  |  '))
+    // })
+    // if (briefingData.pdfLink) {
+    //     briefingData.pdfLink.forEach(link => {
+    //         const pdfLink = createElement('a', 'briefing-anchorlink briefing-link', link[0])
+    //         pdfLink.href = link[1]
+    //         pdfLink.style.marginTop = '10px'
+    //         document.getElementById('header').appendChild(createElement('br'))
+    //         document.getElementById('header').appendChild(pdfLink)
+    //     })
+    // }
+
+    briefingData.anchorLinks.forEach((section, ind) => {
+        const sectionDiv = createElement('div', 'section-div')
+        sectionDiv.id = `section-${ind}`
+        const header = createElement('h2', 'section-header', section)
+        sectionDiv.appendChild(header)
+
+        if (briefingData.sections[section.toUpperCase()]?.length === 0) {
+            const emptySectionNote = createElement('div', 'section-emptynote', 'No relevant coverage')
+            sectionDiv.appendChild(emptySectionNote)
+        } else {
+            const sectionItems = briefingData.sections[section.toUpperCase()]
+            sectionItems.forEach(item => {
+                const itemDiv = createElement('div', 'item-parent')
+                if (item.metadata.length > 0) {
+                    itemDiv.appendChild(createElement('h1', 'item-headline', item.headline))
+                    const metadata = createElement('a', 'item-metadata', moveIDToEnd(item.metadata))
+                    const metadataParent = createElement('span')
+                    metadataParent.appendChild(metadata)
+                    metadata.href = item.readMoreLink[1]
+                    itemDiv.appendChild(metadataParent)
+                } else {
+                    // itemDiv.appendChild(createElement('h3', 'item-headline', item.headline))
+                    const metadata = createElement('a', 'item-metadata', moveIDToEnd(item.headline))
+                    const metadataParent = createElement('span')
+                    metadataParent.appendChild(metadata)
+                    metadata.href = item.readMoreLink[1]
+                    itemDiv.appendChild(createElement('br'))
+                    itemDiv.appendChild(metadataParent)
+                }
+                itemDiv.appendChild(createElement('p', 'item-paragraph', item.summary))
+                if (item.syndicationLinks) {
+                    const syndicationLinks = createElement('i', 'briefing-syndication')
+                    syndicationLinks.innerHTML = item.syndicationLinks.replace(/color: rgb\(0, 0, 0\); |color:#000000;/g, '')
+                    itemDiv.appendChild(syndicationLinks)
+                }
+                sectionDiv.appendChild(itemDiv)
+            })
+        }
+        document.getElementById('sections-parent').appendChild(sectionDiv)
+    })
+}
+
+function createElement(type = 'div', className = '', innerText = '') {
+    console.log(innerText)
+    const element = document.createElement(type)
+    element.className = className
+    element.innerText = innerText
+    return element
+}
+
+function getBriefingData() {
+    return new Promise(options => {
+        chrome.storage.local.get({ briefingData: {} }, function (data) {
+            options(data.briefingData)
+        })
+    })
+}
+
+const moveIDToEnd = (metadata) => {
+    console.log(metadata)
+    const splitMetadata = metadata.split(',')
+    const ID = splitMetadata.filter(x => x.startsWith(' ID:'))[0]
+    return splitMetadata.filter(x => x !== ' ' && !x.startsWith(' ID:')).concat(ID).join(',')
+}

@@ -1,0 +1,156 @@
+* {
+    font-family: Arial;
+}
+
+a {
+    color: #00B0F0;
+    font-weight: bolder;
+    font-size: 9px;
+}
+
+.flex-middle {
+    display: flex;
+    justify-content: center;
+}
+
+#container {
+    width: 50%;
+    margin-top: 20px;
+}
+
+#header-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#header {
+    display: flex;
+    flex-direction: column;
+}
+
+.briefing-syndication, .briefing-syndication a {
+    font-size: 12px;
+    line-height: 16px;
+    text-align: left;
+}
+
+
+#briefing-title {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    text-align: left;
+    color: rgb(0, 0, 0);
+    margin-bottom: 20px;
+}
+
+#briefing-date {
+    font-size: 12px;
+    line-height: 1;
+    text-align: left;
+    color: rgb(0, 0, 0);
+    text-transform: uppercase;
+    color: red;
+    font-weight: bold;
+}
+
+#briefing-note, .briefing-link {
+    font-size: 13px;
+    line-height: 1;
+    text-align: left;
+}
+
+.briefing-anchorlink {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 25px;
+}
+
+.anchor-divider {
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size: 25px;
+}
+
+#briefing-links-container {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+}
+
+.section-header {
+    font-size: 18px;
+    /* line-height: 24px; */
+    text-align: left;
+    color: #313131;
+    margin-top: 60px;
+}
+
+.item-headline {
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 20px;
+    text-align: left;
+    color: #6B2976;
+    margin-top: 15px;
+    margin-bottom: 0px;
+}
+
+.item-metadata {
+    font-size: 12px;
+    text-align: left;
+}
+
+.item-broadcast-headline {
+    margin-top: 15px;
+    margin-bottom: 0px;
+}
+
+.item-paragraph {
+    font-size: 12px;
+    text-align: left;
+    color: rgb(49, 49, 49);
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+.copyright-title {
+    display: block;
+    margin: 13px 0;
+    font-size: 1.2em;
+}
+
+.copyright-text {
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 14px;
+    text-align: left;
+    color: rgb(0, 0, 0);
+    margin: 13px 0;
+}
+
+#briefing-logo {
+    border: 0;
+    display: block;
+    outline: none;
+    text-decoration: none;
+    height: auto;
+    width: 300px;
+    height: 98px;
+}
+
+body {
+    margin: 0;
+}
+
+.section-emptynote {
+    font-size: 12px;
+    line-height: 18px;
+    text-align: left;
+    color: #313131;
+}
+
+.top-link {
+    margin-top: 20px;
+}
