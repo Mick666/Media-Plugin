@@ -1,9 +1,10 @@
 * {
     font-family: Arial;
+    line-height: 1.5;
 }
 
 a {
-    color: #00B0F0;
+    color: #4D4D4D;
     font-weight: bolder;
     font-size: 9px;
 }
@@ -30,9 +31,11 @@ a {
 }
 
 .briefing-syndication, .briefing-syndication a {
-    font-size: 12px;
-    line-height: 16px;
+    font-size: 16px;
     text-align: left;
+    color: #4D4D4D;
+    margin-top: 0px;
+    margin-bottom: 16px;
 }
 
 
@@ -87,19 +90,27 @@ a {
     margin-top: 60px;
 }
 
+.item-parent {
+    display: flex;
+    flex-direction: column;
+}
+
 .item-headline {
-    font-size: 12px;
+    font-size: 29px;
     font-weight: bold;
     line-height: 20px;
     text-align: left;
     color: #6B2976;
-    margin-top: 15px;
-    margin-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 12px;
 }
 
 .item-metadata {
-    font-size: 12px;
+    font-size: 16px;
     text-align: left;
+    color: #4D4D4D;
+    margin-top: 0px;
+    margin-bottom: 12px;
 }
 
 .item-broadcast-headline {
@@ -108,11 +119,20 @@ a {
 }
 
 .item-paragraph {
-    font-size: 12px;
+    font-size: 16px;
     text-align: left;
     color: rgb(49, 49, 49);
-    margin-top: 4px;
-    margin-bottom: 6px;
+    margin-top: 0px;
+    margin-bottom: 12px;
+}
+
+.item-readmore {
+    text-align: right;
+    margin-left: auto;
+    margin-right: 0;
+    font-size: 16px;
+    margin-top: 0px;
+    margin-bottom: 12px;
 }
 
 .copyright-title {

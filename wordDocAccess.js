@@ -1,5 +1,6 @@
 window.onload = async function () {
     const briefingData = await getBriefingData()
+    console.log(briefingData);
 
     document.getElementById('briefing-logo').src = briefingData.briefingImage
     document.getElementById('briefing-title').innerText = briefingData.title
@@ -35,14 +36,14 @@ window.onload = async function () {
                 const itemDiv = createElement('div', 'item-parent')
                 if (item.metadata.length > 0) {
                     itemDiv.appendChild(createElement('h1', 'item-headline', item.headline))
-                    const metadata = createElement('a', 'item-metadata', moveIDToEnd(item.metadata))
+                    const metadata = createElement('a', 'item-metadata', item.metadata)
                     const metadataParent = createElement('span')
                     metadataParent.appendChild(metadata)
                     metadata.href = item.readMoreLink[1]
                     itemDiv.appendChild(metadataParent)
                 } else {
                     // itemDiv.appendChild(createElement('h3', 'item-headline', item.headline))
-                    const metadata = createElement('a', 'item-metadata', moveIDToEnd(item.headline))
+                    const metadata = createElement('h4', 'item-metadata', item.headline)
                     const metadataParent = createElement('span')
                     metadataParent.appendChild(metadata)
                     metadata.href = item.readMoreLink[1]
@@ -51,9 +52,17 @@ window.onload = async function () {
                 }
                 itemDiv.appendChild(createElement('p', 'item-paragraph', item.summary))
                 if (item.syndicationLinks) {
-                    const syndicationLinks = createElement('i', 'briefing-syndication')
-                    syndicationLinks.innerHTML = item.syndicationLinks.replace(/color: rgb\(0, 0, 0\); |color:#000000;/g, '')
+                    const syndicationLinks = createElement('div', 'briefing-syndication')
+                    // console.log(item.syndicationLinks)
+                    syndicationLinks.innerHTML = item.syndicationLinks.replace(/color: rgb\([\d]{1,3}, [\d]{1,3}, [\d]{1,3}\);|color:#[a-zA-Z0-9]*;/g, 'test')
                     itemDiv.appendChild(syndicationLinks)
+                }
+                if (item.readMoreLink.length > 0) {
+                    const readMoreParent = createElement('a', 'item-readmore')
+                    const readMoreLink = createElement('p', 'item-readmore', `Read more about ${item.headline}`)
+                    readMoreParent.href = item.readMoreLink[1]
+                    readMoreParent.appendChild(readMoreLink)
+                    itemDiv.appendChild(readMoreParent)
                 }
                 sectionDiv.appendChild(itemDiv)
             })
@@ -63,7 +72,7 @@ window.onload = async function () {
 }
 
 function createElement(type = 'div', className = '', innerText = '') {
-    console.log(innerText)
+    // console.log(innerText)
     const element = document.createElement(type)
     element.className = className
     element.innerText = innerText
@@ -79,7 +88,7 @@ function getBriefingData() {
 }
 
 const moveIDToEnd = (metadata) => {
-    console.log(metadata)
+    // console.log(metadata)
     const splitMetadata = metadata.split(',')
     const ID = splitMetadata.filter(x => x.startsWith(' ID:'))[0]
     return splitMetadata.filter(x => x !== ' ' && !x.startsWith(' ID:')).concat(ID).join(',')
