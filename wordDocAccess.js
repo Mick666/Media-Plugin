@@ -36,10 +36,10 @@ window.onload = async function () {
                 const itemDiv = createElement('div', 'item-parent')
                 if (item.metadata.length > 0) {
                     itemDiv.appendChild(createElement('h1', 'item-headline', `HEADING_CONTAINER${item.headline}HEADING_CONTAINER`))
-                    const metadata = createElement('a', 'item-metadata', `METADATA_CONTAINER${item.metadata}METADATA_CONTAINER`)
+                    const metadata = createElement('div', 'item-metadata', `METADATA_CONTAINER${item.metadata}METADATA_CONTAINER`)
                     const metadataParent = createElement('span')
                     metadataParent.appendChild(metadata)
-                    metadata.href = item.readMoreLink[1]
+                    // metadata.href = item.readMoreLink[1]
                     itemDiv.appendChild(metadataParent)
                 } else {
                     // itemDiv.appendChild(createElement('h3', 'item-headline', item.headline))
@@ -58,9 +58,9 @@ window.onload = async function () {
                     itemDiv.appendChild(syndicationLinks)
                 }
                 if (item.readMoreLink.length > 0) {
-                    const readMoreParent = createElement('a', 'item-readmore')
-                    const readMoreLink = createElement('p', 'item-readmore', `ALSO_CONTAINERRead more about ${item.headline}ALSO_CONTAINER`)
-                    readMoreParent.href = item.readMoreLink[1]
+                    const readMoreParent = createElement('div', 'item-readmore')
+                    const readMoreLink = createElement('a', 'item-readmore', `ALSO_CONTAINERRead more about ${item.headline}ALSO_CONTAINER`)
+                    readMoreLink.href = item.readMoreLink[1]
                     readMoreParent.appendChild(readMoreLink)
                     itemDiv.appendChild(readMoreParent)
                 }
