@@ -1,6 +1,6 @@
 window.onload = async function () {
     const briefingData = await getBriefingData()
-    console.log(briefingData);
+    console.log(briefingData)
 
     document.getElementById('briefing-logo').src = briefingData.briefingImage
     document.getElementById('briefing-title').innerText = briefingData.title
@@ -35,31 +35,31 @@ window.onload = async function () {
             sectionItems.forEach(item => {
                 const itemDiv = createElement('div', 'item-parent')
                 if (item.metadata.length > 0) {
-                    itemDiv.appendChild(createElement('h1', 'item-headline', item.headline))
-                    const metadata = createElement('a', 'item-metadata', item.metadata)
+                    itemDiv.appendChild(createElement('h1', 'item-headline', `HEADING_CONTAINER${item.headline}HEADING_CONTAINER`))
+                    const metadata = createElement('a', 'item-metadata', `METADATA_CONTAINER${item.metadata}METADATA_CONTAINER`)
                     const metadataParent = createElement('span')
                     metadataParent.appendChild(metadata)
                     metadata.href = item.readMoreLink[1]
                     itemDiv.appendChild(metadataParent)
                 } else {
                     // itemDiv.appendChild(createElement('h3', 'item-headline', item.headline))
-                    const metadata = createElement('h4', 'item-metadata', item.headline)
+                    const metadata = createElement('h4', 'item-metadata', `HEADING_CONTAINER${item.headline}HEADING_CONTAINER`)
                     const metadataParent = createElement('span')
                     metadataParent.appendChild(metadata)
                     metadata.href = item.readMoreLink[1]
                     itemDiv.appendChild(createElement('br'))
                     itemDiv.appendChild(metadataParent)
                 }
-                itemDiv.appendChild(createElement('p', 'item-paragraph', item.summary))
+                itemDiv.appendChild(createElement('p', 'item-paragraph', `BODY_CONTAINER${item.summary}BODY_CONTAINER`))
                 if (item.syndicationLinks) {
                     const syndicationLinks = createElement('div', 'briefing-syndication')
                     // console.log(item.syndicationLinks)
-                    syndicationLinks.innerHTML = item.syndicationLinks.replace(/color: rgb\([\d]{1,3}, [\d]{1,3}, [\d]{1,3}\);|color:#[a-zA-Z0-9]*;/g, 'test')
+                    syndicationLinks.innerHTML = `ALSO_CONTAINER${item.syndicationLinks.replace(/color: rgb\([\d]{1,3}, [\d]{1,3}, [\d]{1,3}\);|color:#[a-zA-Z0-9]*;/g, '')}ALSO_CONTAINER`
                     itemDiv.appendChild(syndicationLinks)
                 }
                 if (item.readMoreLink.length > 0) {
                     const readMoreParent = createElement('a', 'item-readmore')
-                    const readMoreLink = createElement('p', 'item-readmore', `Read more about ${item.headline}`)
+                    const readMoreLink = createElement('p', 'item-readmore', `ALSO_CONTAINERRead more about ${item.headline}ALSO_CONTAINER`)
                     readMoreParent.href = item.readMoreLink[1]
                     readMoreParent.appendChild(readMoreLink)
                     itemDiv.appendChild(readMoreParent)
